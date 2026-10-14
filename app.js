@@ -238,9 +238,10 @@
     const field = `<div class="pitch${sc.full ? " full" : ""}" aria-label="Схема ${esc(sc.formation || "")}">${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<div class="p-line">${lines[k].map((p) => man(p, sc)).join("")}</div>`).join("")}</div>`;
     return bench?.length ? `<div>${field}<div class="bench-row" aria-label="Скамейка по порядку автозамен">${bench.map((p, i) => `<div class="b-slot"><i class="b-no">${i + 1}</i>${man(p, sc)}</div>`).join("")}</div></div>` : field;
   }
+  const bdelta = (t) => { const d = (t.out?.price ?? 0) - (t.in?.price ?? 0); return `${d >= 0 ? "+" : "−"}${num(Math.abs(d))}`; };
   function scenarioDetail(sc) {
     const trs = (sc.transfers || []).map((t) => `<div class="callout" style="border-left-color:var(--pitch)">
-        <p class="tr-line">${face(t.out?.id, "face sm out")}<span class="tr-out">${esc(t.out?.name)}</span> → ${face(t.in?.id, "face sm")}${crest(t.in?.team)}<b>${esc(t.in?.name)}</b> <span class="sub">${esc(t.type || "")} · +${num(t.gainTour)} на тур, +${num(t.gainHorizon)} за 3 тура</span></p>
+        <p class="tr-line">${face(t.out?.id, "face sm out")}<span class="tr-out">${esc(t.out?.name)}</span> → ${face(t.in?.id, "face sm")}${crest(t.in?.team)}<b>${esc(t.in?.name)}</b> <span class="sub">${esc(t.type || "")} · +${num(t.gainTour)} на тур, +${num(t.gainHorizon)} за 3 тура · бюджет ${bdelta(t)} → в банке ${num(t.bankAfter)}</span></p>
         ${(t.whyIn || []).length ? `<ul style="margin:8px 0 0;padding-left:18px">${t.whyIn.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
         ${t.whyOut ? `<p class="sub" style="margin-top:6px">Почему продаём: ${esc(t.whyOut)}</p>` : ""}</div>`).join("");
     const plan = (sc.futurePlan || []).map((f) => `<p><b>N+${f.tour}:</b> ${(f.transfers || []).map((t) => `<span class="tr-out">${esc(lastName(t.out?.name))}</span> → ${esc(lastName(t.in?.name))}`).join(", ") || "без трансферов"}</p>`).join("");
@@ -258,11 +259,12 @@
     const sel = state.sc && r.scenarios[state.sc] ? state.sc : "normal";
     const cols = keys.map((k) => {
       const s = r.scenarios[k];
-      const tr = (s.transfers || []).map((x) => `<li><span class="tr-out">${esc(x.out?.name)}</span><span class="tr-in"> → ${esc(x.in?.name)}</span></li>`).join("");
+      const tr = (s.transfers || []).map((x) => `<li><span class="tr-out">${esc(x.out?.name)}</span><span class="tr-in"> → ${esc(x.in?.name)}</span> <span class="sub" style="display:inline">${bdelta(x)}</span></li>`).join("");
       return `<div><h3>${esc(s.title)}</h3>
         <p class="pts">${num(s.xiPoints)} <small>xPts основы с капитаном</small></p>
         <p class="cap">Капитан <b>${esc(s.captain)}</b>, вице ${esc(s.vice)} · ${esc(s.formation)}</p>
         <ul>${tr || '<li class="sub">Без трансферов</li>'}</ul>
+        <p class="sub">Итог: состав ${num(s.budget?.costAfter)} из ${num(s.budget?.limit, 0)}, в банке <b>${num(s.bankAfter)}</b></p>
         ${(s.flags || []).length ? `<div class="flags">${s.flags.map((f) => `<p>${esc(f)}</p>`).join("")}</div>` : ""}
         <button class="pick" data-sc="${k}" aria-pressed="${k === sel}">${k === sel ? "Показан на поле" : "Показать на поле"}</button></div>`;
     }).join("");

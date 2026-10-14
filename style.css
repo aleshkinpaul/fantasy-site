@@ -83,7 +83,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 6
 #who-btn::after { content: ""; width: 6px; height: 6px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
 .ava { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; display: inline-grid; place-items: center; background: var(--line); font-weight: 700; font-size: 13px; }
 .ava.lg { width: 40px; height: 40px; }
-img.ava { background: none; border-radius: 0; object-fit: contain; }
+img.ava { object-fit: cover; }
 #who-list {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; list-style: none; margin: 0; padding: 6px; min-width: 240px;
   background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(21, 32, 43, .16);
