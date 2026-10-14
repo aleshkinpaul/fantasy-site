@@ -178,8 +178,6 @@ section > h2 { margin-bottom: 14px; }
 .face.crest-only { object-fit: contain; background: transparent; border-radius: 0; padding: 2px; }
 .face.out { opacity: .55; filter: grayscale(1); }
 .who-cell { display: flex; gap: 10px; align-items: center; }
-td.who-cell { display: table-cell; }
-td.who-cell > img { float: left; margin-right: 10px; }
 .tr-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .tr-line .crest { margin-right: 0; }
 .p-man .shirt { position: relative; width: 46px; height: 46px; overflow: visible; }

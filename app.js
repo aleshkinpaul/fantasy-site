@@ -193,7 +193,7 @@
     const rank = { ВР: 0, ЗЩ: 1, ПЗ: 2, НП: 3 };
     const rows = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0)).map((p) => {
       const pill = p.filter === "ok" ? "" : `<span class="pill ${/травм|дискв|out/i.test(p.filter) ? "bad" : "warn"}">${esc(p.filter)}</span>`;
-      return `<tr><td class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></span></td>
+      return `<tr><td><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></span></div></td>
         ${[0, 1, 2].map((i) => `<td class="num">${num(p.xPts?.[i])}</td>`).join("")}
         <td class="num">${p.pStart != null && p.pStart < 0.6 ? `<span class="down">${pct(p.pStart)}</span>` : pct(p.pStart)}</td>
         <td><span class="sub" style="font-size:12.5px">${(p.notes || []).map(esc).join("<br>")}</span></td></tr>`;
