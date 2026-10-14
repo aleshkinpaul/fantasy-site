@@ -358,3 +358,19 @@ section > h2 { margin-bottom: 14px; }
 .plt .c-cell { color: var(--muted); }
 .plt tr.mine td { background: var(--pitch-soft); }
 .plt tr.dim td { opacity: .6; }
+
+.plt th { white-space: nowrap; }
+.plt th .sort { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.plt th .sort i { width: 8px; font-style: normal; opacity: .35; }
+.plt th .sort i::after { content: "↕"; }
+.plt th[aria-sort="descending"] .sort, .plt th[aria-sort="ascending"] .sort { color: var(--ink); font-weight: 600; }
+.plt th[aria-sort="descending"] .sort i::after { content: "↓"; }
+.plt th[aria-sort="ascending"] .sort i::after { content: "↑"; }
+.plt th[aria-sort="descending"] .sort i, .plt th[aria-sort="ascending"] .sort i { opacity: 1; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 12px; }
+.pager button { font: inherit; font-size: 13px; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.pager button[aria-current="page"] { background: var(--ink); color: var(--chalk); border-color: var(--ink); }
+.pager button:disabled { opacity: .4; cursor: default; }
+.pager .gap { padding: 0 4px; color: var(--muted); }
+.pager .sub { margin-left: 8px; }

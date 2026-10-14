@@ -302,23 +302,42 @@
   const COMP = [["minutes", "Мин", "минуты на поле"], ["goals", "Голы", "голы"], ["assists", "Асс", "голевые передачи"],
     ["fantasyAssists", "Ф-асс", "фэнтези-ассисты"], ["cleanSheet", "Сух", "сухой матч"], ["conceded", "Пропущ", "пропущенные (−1 за 2)"],
     ["saves", "Сэйвы", "сэйвы"], ["recoveries", "Возвр", "возвраты владения"], ["cards", "Карт", "карточки и пенальти"]];
+  // колонки таблицы игроков: [ключ, заголовок, подсказка, значение для сортировки, по умолчанию по убыванию]
+  const PCOLS = [
+    ["rank", "#", "место среди всех", (p) => p.rank, false], ["posRank", "# поз.", "место среди игроков позиции", (p) => p.posRank, false],
+    ["name", "Игрок", "", (p) => p.name, false], ["price", "Цена", "", (p) => p.price, true],
+    ["x0", "xPts", "ожидаемые очки на тур", (p) => p.x?.[0] ?? 0, true], ["opp", "Соперник", "число матчей в туре", (p) => (p.m || []).length, true],
+    ["st", "Старт", "вероятность выйти в старте", (p) => p.st ?? 0, true], ["app", "Выход", "вероятность выйти на поле", (p) => p.app ?? 0, true],
+    ["min", "~мин", "ожидаемые минуты", (p) => p.min ?? 0, true],
+    ...COMP.map(([k, l, tip]) => [`c.${k}`, l, tip, (p) => p.c?.[k] ?? 0, k !== "conceded" && k !== "cards"]),
+    ["x1", "N+1", "ожидаемые очки на следующий тур", (p) => p.x?.[1] ?? 0, true], ["x2", "N+2", "через тур", (p) => p.x?.[2] ?? 0, true],
+    ["own", "Влад.", "владение", (p) => p.own ?? 0, true],
+  ];
+  const PAGE = 50;
   function playersSection(t) {
     const P = t.players;
     if (!P?.list?.length) return "";
     return `<section><h2>Все игроки по ожидаемым очкам${P.tour ? " · " + esc(P.tour) : ""}</h2>
-      <p class="lede">Все игроки лиги, от большего к меньшему. «#» — место среди всех, «# поз.» — среди игроков своей позиции. Очки — сумма составляющих справа; в спарке — за оба матча. Старт и выход — вероятности на первый матч тура.</p>
+      <p class="lede">Все игроки лиги. «#» — место среди всех по xPts, «# поз.» — среди игроков своей позиции. Нажмите на заголовок колонки, чтобы отсортировать (повторно — в обратную сторону). Очки — сумма составляющих; в спарке — за оба матча. Старт и выход — вероятности на первый матч тура.</p>
       <div class="seg pos-filter" role="group" aria-label="Позиции"><button data-pos="" aria-pressed="false">Все</button>${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<button data-pos="${k}" aria-pressed="false">${posb(k)}</button>`).join("")}</div>
-      <div class="table-wrap"><table class="plt"><thead><tr><th class="num">#</th><th class="num"># поз.</th><th>Игрок</th><th class="num">Цена</th><th class="num">xPts</th><th>Соперник</th><th class="num">Старт</th><th class="num">Выход</th><th class="num">~мин</th>
-        ${COMP.map(([, l, tip]) => `<th class="num" title="${esc(tip)}">${l}</th>`).join("")}<th class="num">N+1</th><th class="num">N+2</th><th class="num">Влад.</th></tr></thead>
-        <tbody id="plt-body"></tbody></table></div></section>`;
+      <div class="table-wrap"><table class="plt"><thead><tr>${PCOLS.map(([k, l, tip], i) => `<th class="${i === 2 || k === "opp" ? "" : "num"}" data-col="${k}"${tip ? ` title="${esc(tip)}"` : ""}><button class="sort" data-sort="${k}">${l}<i></i></button></th>`).join("")}</tr></thead>
+        <tbody id="plt-body"></tbody></table></div><div class="pager" id="plt-pager"></div></section>`;
   }
   function fillPlayers(t, st) {
     const body = document.getElementById("plt-body");
     if (!body) return;
     const sel = st.pos || new Set();
     document.querySelectorAll(".pos-filter [data-pos]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.pos ? sel.has(b.dataset.pos) : !sel.size)));
-    const list = t.players.list.filter((p) => !sel.size || sel.has(p.pos));
-    body.innerHTML = list.map((p) => {
+    const sort = st.sort || { k: "x0", desc: true };
+    const col = PCOLS.find((c) => c[0] === sort.k) || PCOLS[4];
+    document.querySelectorAll(".plt th[data-col]").forEach((th) => th.setAttribute("aria-sort", th.dataset.col === col[0] ? (sort.desc ? "descending" : "ascending") : "none"));
+    const val = col[3], dir = sort.desc ? -1 : 1;
+    const list = t.players.list.filter((p) => !sel.size || sel.has(p.pos)).slice()
+      .sort((a, b) => { const x = val(a), y = val(b); return (typeof x === "string" ? x.localeCompare(y, "ru") : x - y) * dir || a.rank - b.rank; });
+    const pages = Math.max(1, Math.ceil(list.length / PAGE));
+    st.page = Math.min(Math.max(st.page || 1, 1), pages);
+    const rows = list.slice((st.page - 1) * PAGE, st.page * PAGE);
+    body.innerHTML = rows.map((p) => {
       const opp = (p.m || []).map((m) => `${crest(m.opp, "crest xs") || esc(m.opp) + " "}${m.h ? "д" : "г"}`).join(" ") + ((p.m || []).length > 1 ? ' <span class="pill">×2</span>' : "") || '<span class="sub">нет матча</span>';
       const flag = p.status === "INJURY" ? ' <span class="pill warn" title="травма">травма</span>' : p.status ? ' <span class="pill warn">не играет</span>' : "";
       return `<tr class="${p.mine ? "mine" : ""}${p.ok ? "" : " dim"}"><td class="num">${p.rank}</td><td class="num">${posb(p.pos)} ${p.posRank}</td>
@@ -327,7 +346,14 @@
         <td class="opp">${opp}</td><td class="num">${pct(p.st)}</td><td class="num">${pct(p.app)}</td><td class="num">${int(p.min)}</td>
         ${COMP.map(([k]) => `<td class="num c-cell">${p.c?.[k] ? num(p.c[k]) : '<span class="sub">·</span>'}</td>`).join("")}
         <td class="num">${num(p.x?.[1])}</td><td class="num">${num(p.x?.[2])}</td><td class="num">${num(p.own)}%</td></tr>`;
-    }).join("") || '<tr><td colspan="21" class="empty">Нет игроков.</td></tr>';
+    }).join("") || `<tr><td colspan="${PCOLS.length}" class="empty">Нет игроков.</td></tr>`;
+    const pager = document.getElementById("plt-pager");
+    const nums = [...new Set([1, st.page - 2, st.page - 1, st.page, st.page + 1, st.page + 2, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+    pager.innerHTML = pages < 2 ? `<span class="sub">${list.length} игроков</span>` :
+      `<button data-page="${st.page - 1}" ${st.page === 1 ? "disabled" : ""} aria-label="Предыдущая страница">‹</button>`
+      + nums.map((n, i) => (i && n - nums[i - 1] > 1 ? '<span class="gap">…</span>' : "") + `<button data-page="${n}"${n === st.page ? ' aria-current="page"' : ""}>${n}</button>`).join("")
+      + `<button data-page="${st.page + 1}" ${st.page === pages ? "disabled" : ""} aria-label="Следующая страница">›</button>`
+      + `<span class="sub">${(st.page - 1) * PAGE + 1}–${Math.min(st.page * PAGE, list.length)} из ${list.length}</span>`;
   }
   function tabFixtures(t, state) {
     const fx = t.fixtures;
@@ -408,8 +434,18 @@
       app.querySelectorAll(".pos-filter [data-pos]").forEach((b) => b.addEventListener("click", () => {
         const k = b.dataset.pos;
         if (!k) st.pos.clear(); else if (st.pos.has(k)) st.pos.delete(k); else st.pos.add(k);
-        fillPlayers(t, st);
+        st.page = 1; fillPlayers(t, st);
       }));
+      app.querySelectorAll(".plt [data-sort]").forEach((b) => b.addEventListener("click", () => {
+        const c = PCOLS.find((x) => x[0] === b.dataset.sort);
+        st.sort = st.sort?.k === c[0] ? { k: c[0], desc: !st.sort.desc } : { k: c[0], desc: c[4] };
+        st.page = 1; fillPlayers(t, st);
+      }));
+      document.getElementById("plt-pager").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-page]"); if (!b || b.disabled) return;
+        st.page = +b.dataset.page; fillPlayers(t, st);
+        document.querySelector(".plt").closest("section").scrollIntoView({ block: "start" });
+      });
     }
   }
 
