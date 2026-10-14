@@ -393,3 +393,5 @@ section > h2 { margin-bottom: 14px; }
 .rng input { width: 64px; font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--paper); color: var(--ink); }
 button.link { font: inherit; font-size: 13px; background: none; border: 0; padding: 4px 6px; color: var(--pitch); cursor: pointer; text-decoration: underline; }
+/* аватар в шапке — в кружке */
+#who-btn img.ava { border-radius: 50%; object-fit: cover; background: var(--line); }
