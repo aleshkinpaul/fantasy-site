@@ -48,6 +48,7 @@
     else if (e.key === "Escape") { openList(false); whoBtn.focus(); }
   });
   document.addEventListener("click", (e) => { if (!whoWrap.contains(e.target)) openList(false); });
+  document.addEventListener("click", (e) => document.querySelectorAll(".club-dd[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; }));
   const mine = () => (PROFILE ? PROFILE.tournaments : {});
 
   // ---------- утилиты ----------
@@ -306,12 +307,15 @@
   const PCOLS = [
     ["rank", "#", "место среди всех", (p) => p.rank, false], ["posRank", "# поз.", "место среди игроков позиции", (p) => p.posRank, false],
     ["name", "Игрок", "", (p) => p.name, false], ["price", "Цена", "", (p) => p.price, true],
-    ["x0", "xPts", "ожидаемые очки на тур", (p) => p.x?.[0] ?? 0, true], ["opp", "Соперник", "число матчей в туре", (p) => (p.m || []).length, true],
+    ["x0", "xPts", "ожидаемые очки на тур", (p) => p.x?.[0] ?? 0, true],
+    ["fo", "ФО", "фэнтези-очки за сезон (sports.ru)", (p) => p.fo ?? -1, true], ["avg", "Ср.", "среднее за матч (sports.ru)", (p) => p.avg ?? -1, true],
+    ["form", "Форма", "форма (sports.ru)", (p) => p.form ?? -1, true], ["sel", "Попул.", "популярность: % всех команд sports.ru", (p) => p.sel ?? -1, true],
+    ["opp", "Соперник", "число матчей в туре", (p) => (p.m || []).length, true],
     ["st", "Старт", "вероятность выйти в старте", (p) => p.st ?? 0, true], ["app", "Выход", "вероятность выйти на поле", (p) => p.app ?? 0, true],
     ["min", "~мин", "ожидаемые минуты", (p) => p.min ?? 0, true],
     ...COMP.map(([k, l, tip]) => [`c.${k}`, l, tip, (p) => p.c?.[k] ?? 0, k !== "conceded" && k !== "cards"]),
     ["x1", "N+1", "ожидаемые очки на следующий тур", (p) => p.x?.[1] ?? 0, true], ["x2", "N+2", "через тур", (p) => p.x?.[2] ?? 0, true],
-    ["own", "Влад.", "владение", (p) => p.own ?? 0, true],
+    ["own", "Топ-100", "владение в топ-100 общего зачёта", (p) => p.own ?? 0, true],
   ];
   const PAGE = 50;
   function playersSection(t) {
@@ -319,7 +323,15 @@
     if (!P?.list?.length) return "";
     return `<section><h2>Все игроки по ожидаемым очкам${P.tour ? " · " + esc(P.tour) : ""}</h2>
       <p class="lede">Все игроки лиги. «#» — место среди всех по xPts, «# поз.» — среди игроков своей позиции. Нажмите на заголовок колонки, чтобы отсортировать (повторно — в обратную сторону). Очки — сумма составляющих; в спарке — за оба матча. Старт и выход — вероятности на первый матч тура.</p>
-      <div class="seg pos-filter" role="group" aria-label="Позиции"><button data-pos="" aria-pressed="false">Все</button>${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<button data-pos="${k}" aria-pressed="false">${posb(k)}</button>`).join("")}</div>
+      <div class="pl-filters">
+        <div class="seg pos-filter" role="group" aria-label="Позиции"><button data-pos="" aria-pressed="false">Все</button>${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<button data-pos="${k}" aria-pressed="false">${posb(k)}</button>`).join("")}</div>
+        <details class="club-dd"><summary>Клубы: <b id="club-label">все</b></summary><div class="club-list">
+          <button type="button" class="link" data-clubs="none">Сбросить</button>
+          ${[...new Set(P.list.map((p) => p.team))].sort((a, b) => a.localeCompare(b, "ru")).map((c) => `<label><input type="checkbox" value="${esc(c)}">${crest(c, "crest xs")}${esc(c)}</label>`).join("")}</div></details>
+        <label class="rng">Цена <input type="number" step="0.5" min="0" data-f="priceMin" placeholder="от"> – <input type="number" step="0.5" min="0" data-f="priceMax" placeholder="до"></label>
+        <label class="rng">Популярность, % <input type="number" step="1" min="0" max="100" data-f="selMin" placeholder="от"> – <input type="number" step="1" min="0" max="100" data-f="selMax" placeholder="до"></label>
+        <button type="button" class="link" id="pl-reset">Сбросить фильтры</button>
+      </div>
       <div class="table-wrap"><table class="plt"><thead><tr>${PCOLS.map(([k, l, tip], i) => `<th class="${i === 2 || k === "opp" ? "" : "num"}" data-col="${k}"${tip ? ` title="${esc(tip)}"` : ""}><button class="sort" data-sort="${k}">${l}<i></i></button></th>`).join("")}</tr></thead>
         <tbody id="plt-body"></tbody></table></div><div class="pager" id="plt-pager"></div></section>`;
   }
@@ -332,7 +344,12 @@
     const col = PCOLS.find((c) => c[0] === sort.k) || PCOLS[4];
     document.querySelectorAll(".plt th[data-col]").forEach((th) => th.setAttribute("aria-sort", th.dataset.col === col[0] ? (sort.desc ? "descending" : "ascending") : "none"));
     const val = col[3], dir = sort.desc ? -1 : 1;
-    const list = t.players.list.filter((p) => !sel.size || sel.has(p.pos)).slice()
+    const f = st.f || {}, clubs = st.clubs || new Set();
+    const inR = (v, lo, hi) => (lo == null || (v ?? -1) >= lo) && (hi == null || (v ?? Infinity) <= hi);
+    const lbl = document.getElementById("club-label");
+    if (lbl) lbl.textContent = !clubs.size ? "все" : clubs.size === 1 ? [...clubs][0] : `${clubs.size} выбрано`;
+    const list = t.players.list.filter((p) => (!sel.size || sel.has(p.pos)) && (!clubs.size || clubs.has(p.team))
+        && inR(p.price, f.priceMin, f.priceMax) && inR(p.sel, f.selMin, f.selMax)).slice()
       .sort((a, b) => { const x = val(a), y = val(b); return (typeof x === "string" ? x.localeCompare(y, "ru") : x - y) * dir || a.rank - b.rank; });
     const pages = Math.max(1, Math.ceil(list.length / PAGE));
     st.page = Math.min(Math.max(st.page || 1, 1), pages);
@@ -343,6 +360,7 @@
       return `<tr class="${p.mine ? "mine" : ""}${p.ok ? "" : " dim"}"><td class="num">${p.rank}</td><td class="num">${posb(p.pos)} ${p.posRank}</td>
         <td><div class="who-cell">${face(p.id, "face sm") || crest(p.team, "face sm crest-only")}${crest(p.team, "crest xs")}<span><b>${esc(p.name)}</b>${p.mine ? ' <span class="pill ok">мой</span>' : ""}${flag}</span></div></td>
         <td class="num">${num(p.price)}</td><td class="num"><b>${num(p.x?.[0])}</b>${p.sd != null ? `<span class="sub">± ${num(p.sd)}</span>` : ""}</td>
+        <td class="num">${int(p.fo)}</td><td class="num">${num(p.avg)}</td><td class="num">${int(p.form)}</td><td class="num">${p.sel == null ? "—" : num(p.sel) + "%"}</td>
         <td class="opp">${opp}</td><td class="num">${pct(p.st)}</td><td class="num">${pct(p.app)}</td><td class="num">${int(p.min)}</td>
         ${COMP.map(([k]) => `<td class="num c-cell">${p.c?.[k] ? num(p.c[k]) : '<span class="sub">·</span>'}</td>`).join("")}
         <td class="num">${num(p.x?.[1])}</td><td class="num">${num(p.x?.[2])}</td><td class="num">${num(p.own)}%</td></tr>`;
@@ -441,6 +459,29 @@
         st.sort = st.sort?.k === c[0] ? { k: c[0], desc: !st.sort.desc } : { k: c[0], desc: c[4] };
         st.page = 1; fillPlayers(t, st);
       }));
+      st.clubs = st.clubs || new Set(); st.f = st.f || {};
+      const dd = app.querySelector(".club-dd");
+      dd.querySelectorAll("input").forEach((i) => { i.checked = st.clubs.has(i.value); });
+      dd.addEventListener("change", (e) => {
+        if (e.target.checked) st.clubs.add(e.target.value); else st.clubs.delete(e.target.value);
+        st.page = 1; fillPlayers(t, st);
+      });
+      dd.querySelector("[data-clubs]").addEventListener("click", () => {
+        st.clubs.clear(); dd.querySelectorAll("input").forEach((i) => { i.checked = false; }); st.page = 1; fillPlayers(t, st);
+      });
+      app.querySelectorAll("[data-f]").forEach((i) => {
+        if (st.f[i.dataset.f] != null) i.value = st.f[i.dataset.f];
+        i.addEventListener("input", () => {
+          const v = i.value.trim() === "" ? null : Number(i.value.replace(",", "."));
+          st.f[i.dataset.f] = Number.isFinite(v) ? v : null; st.page = 1; fillPlayers(t, st);
+        });
+      });
+      document.getElementById("pl-reset").addEventListener("click", () => {
+        st.pos.clear(); st.clubs.clear(); st.f = {}; st.page = 1;
+        dd.querySelectorAll("input").forEach((i) => { i.checked = false; });
+        app.querySelectorAll("[data-f]").forEach((i) => { i.value = ""; });
+        fillPlayers(t, st);
+      });
       document.getElementById("plt-pager").addEventListener("click", (e) => {
         const b = e.target.closest("[data-page]"); if (!b || b.disabled) return;
         st.page = +b.dataset.page; fillPlayers(t, st);
