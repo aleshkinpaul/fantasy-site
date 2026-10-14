@@ -205,7 +205,7 @@ section > h2 { margin-bottom: 14px; }
 .pitch::before { width: 44%; height: 14%; bottom: -2px; border-bottom: 0; }
 .pitch::after { width: 30%; aspect-ratio: 1; top: -15%; border-radius: 50%; }
 .p-line { display: flex; justify-content: space-around; position: relative; z-index: 1; }
-.p-man { width: 22%; text-align: center; color: #F3F5F1; font-size: 12px; line-height: 1.25; }
+.p-man { flex: 1 1 0; min-width: 0; max-width: 22%; text-align: center; color: #F3F5F1; font-size: 12px; line-height: 1.25; }
 .p-man b { display: block; font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p-man .shirt { width: 34px; height: 34px; margin: 0 auto 4px; border-radius: 50%; background: #F3F5F1; color: #15202B; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
 .p-man.c .shirt { background: var(--yellow); }
@@ -229,6 +229,21 @@ section > h2 { margin-bottom: 14px; }
 .p-man .shirt .badge.v { background: #F3F5F1; }
 .p-man .shirt .mini { position: absolute; bottom: -3px; left: -5px; width: 18px; height: 18px; object-fit: contain; background: #F3F5F1; border-radius: 50%; padding: 2px; }
 .p-man.c .shirt { background: #F3F5F1; box-shadow: 0 0 0 3px var(--yellow); }
+
+/* новички, скамейка, карточки игроков */
+.pitch.full { aspect-ratio: auto; gap: 18px; padding: 22px 6px; }
+.p-man { position: relative; }
+.p-man.new .shirt { box-shadow: 0 0 0 3px #7FD3A0; }
+.new-tag { display: inline-block; font: 700 9.5px/1 "Golos Text", system-ui, sans-serif; font-style: normal; letter-spacing: .02em; background: #7FD3A0; color: #0B2A1D; border-radius: 999px; padding: 2px 6px; margin-bottom: 2px; }
+.bench-row { display: flex; gap: 4px; margin-top: 6px; padding: 10px 6px 8px; border-radius: var(--radius); background: color-mix(in srgb, var(--pitch) 70%, #000); }
+.b-slot { position: relative; flex: 1 1 0; min-width: 0; display: flex; justify-content: center; }
+.b-slot .p-man { max-width: none; width: 100%; }
+.b-no { position: absolute; top: -2px; left: 4px; z-index: 2; font: 700 11px/1 "Golos Text", system-ui, sans-serif; font-style: normal; color: #F3F5F1; opacity: .7; }
+.pl-cards { display: flex; flex-direction: column; gap: 8px; }
+.pl-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font-size: 13.5px; }
+.pl-card .who-cell { margin-bottom: 6px; }
+.pl-card .pl-x { margin-left: auto; text-align: right; }
+.pl-card p { margin: 2px 0 0; }
 
 /* календарь сложности */
 .fdr { min-width: 680px; }

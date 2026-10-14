@@ -4,7 +4,7 @@
   const TZ = "Europe/Moscow";
   const ORDER = ["russia", "england", "spain", "champions-league"];
   const TABS = [
-    ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["fixtures", "Календарь"],
+    ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
     ["top", "Топ-100"], ["injuries", "Травмы"], ["report", "Отчёт"],
   ];
   const cache = {};
@@ -230,15 +230,15 @@
   }
 
   // ---------- турнир ----------
-  function pitch(sc) {
+  const man = (p, sc = {}) => `<div class="p-man${p.name === sc.captain ? " c" : ""}${p.pStart != null && p.pStart < 0.6 ? " low" : ""}${p.new ? " new" : ""}" title="${esc(`${p.name}, ${p.team} · ${p.price} млн · старт ${pct(p.pStart)}${p.new ? " · новичок" : ""}`)}">
+      <div class="shirt">${face(p.id, "ph") || crest(p.team, "ph crest-only") || num(p.xPts?.[0], 0)}${p.name === sc.captain ? '<i class="badge">К</i>' : p.name === sc.vice ? '<i class="badge v">В</i>' : ""}${face(p.id, "ph") ? crest(p.team, "mini") : ""}</div>${p.new ? '<i class="new-tag">новый</i>' : ""}<b>${esc(lastName(p.name))}</b>${esc(p.team)}<br>${num(p.xPts?.[0])}</div>`;
+  function pitch(sc, bench = sc.bench) {
     const lines = { ВР: [], ЗЩ: [], ПЗ: [], НП: [] };
     (sc.xi || []).forEach((p) => (lines[p.pos] || (lines[p.pos] = [])).push(p));
-    const man = (p) => `<div class="p-man${p.captain || p.name === sc.captain ? " c" : ""}${p.pStart != null && p.pStart < 0.6 ? " low" : ""}" title="${esc(`${p.name}, ${p.team} · ${p.price} млн · старт ${pct(p.pStart)}`)}">
-        <div class="shirt">${face(p.id, "ph") || crest(p.team, "ph crest-only") || num(p.xPts?.[0], 0)}${p.name === sc.captain ? '<i class="badge">К</i>' : p.name === sc.vice ? '<i class="badge v">В</i>' : ""}${face(p.id, "ph") ? crest(p.team, "mini") : ""}</div><b>${esc(lastName(p.name))}</b>${esc(p.team)}<br>${num(p.xPts?.[0])}</div>`;
-    return `<div class="pitch" aria-label="Схема ${esc(sc.formation)}">${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<div class="p-line">${lines[k].map(man).join("")}</div>`).join("")}</div>`;
+    const field = `<div class="pitch${sc.full ? " full" : ""}" aria-label="Схема ${esc(sc.formation || "")}">${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<div class="p-line">${lines[k].map((p) => man(p, sc)).join("")}</div>`).join("")}</div>`;
+    return bench?.length ? `<div>${field}<div class="bench-row" aria-label="Скамейка по порядку автозамен">${bench.map((p, i) => `<div class="b-slot"><i class="b-no">${i + 1}</i>${man(p, sc)}</div>`).join("")}</div></div>` : field;
   }
   function scenarioDetail(sc) {
-    const bench = (sc.bench || []).map((p, i) => `<tr><td class="num">${i + 1}</td><td>${esc(p.name)}<span class="sub">${esc(p.pos)} · ${esc(p.team)}</span></td><td class="num">${num(p.xPts?.[0])}</td><td class="num">${pct(p.pStart)}</td></tr>`).join("");
     const trs = (sc.transfers || []).map((t) => `<div class="callout" style="border-left-color:var(--pitch)">
         <p class="tr-line">${face(t.out?.id, "face sm out")}<span class="tr-out">${esc(t.out?.name)}</span> → ${face(t.in?.id, "face sm")}${crest(t.in?.team)}<b>${esc(t.in?.name)}</b> <span class="sub">${esc(t.type || "")} · +${num(t.gainTour)} на тур, +${num(t.gainHorizon)} за 3 тура</span></p>
         ${(t.whyIn || []).length ? `<ul style="margin:8px 0 0;padding-left:18px">${t.whyIn.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
@@ -247,8 +247,6 @@
     return `<div class="pitch-wrap">${pitch(sc)}<div>
         <h3 style="margin-bottom:8px">${esc(sc.title)} · ${esc(sc.formation)}</h3><p class="lede" style="margin:0 0 14px">${esc(sc.about || "")}</p>
         ${trs || '<p class="sub" style="margin-bottom:14px">Трансферов в этом сценарии нет.</p>'}
-        <h3 style="margin:16px 0 8px">Скамейка по порядку автозамен</h3>
-        <div class="table-wrap"><table><thead><tr><th class="num">#</th><th>Игрок</th><th class="num">xPts</th><th class="num">Старт</th></tr></thead><tbody>${bench}</tbody></table></div>
         ${plan ? `<h3 style="margin:16px 0 8px">План на следующие туры</h3>${plan}` : ""}
         <p class="sub" style="margin-top:10px">Бюджет после трансферов: ${num(sc.budget?.costAfter)} из ${num(sc.budget?.limit, 0)}, в банке ${num(sc.bankAfter)}.</p>
       </div></div>`;
@@ -271,24 +269,27 @@
     return `<p class="lede">Расчёт ${esc(dateTime(r.builtAt))} МСК (${ago(r.builtAt)}). Трансферов в туре: ${r.transfersLeft ?? 3}, банк ${num(r.bank)}.</p>
       <div class="scen">${cols}</div>${scenarioDetail(r.scenarios[sel])}`;
   }
+  const noteHtml = (n) => (n ? `<p>${esc(n.text)}</p>${n.pros?.length ? `<p class="up">+ ${n.pros.map(esc).join("; ")}</p>` : ""}${n.cons?.length ? `<p class="down">− ${n.cons.map(esc).join("; ")}</p>` : ""}` : "");
   function tabSquad(t) {
     const list = t.rec?.mySquadNow;
     if (!list) return `<p class="empty">Нет расчёта по текущему составу.</p>`;
     const rank = { ВР: 0, ЗЩ: 1, ПЗ: 2, НП: 3 };
-    const rows = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0)).map((p) => {
-      const FL = {
-        "нет": ["мало минут", "warn", "Сыграл меньше 60% минут в последних 5 матчах — модель не предлагает его в трансферы и с осторожностью ставит в основу"],
-        "исключение": ["мало минут · в форме", "ok", "Меньше 60% минут за 5 матчей, но высокий шанс старта и сильные последние матчи — допущен как исключение"],
-      };
-      const fl = FL[p.filter];
-      const pill = !p.filter || p.filter === "ok" ? "" : `<span class="pill ${fl ? fl[1] : "warn"}" title="${esc(fl ? fl[2] : p.filter)}">${esc(fl ? fl[0] : p.filter)}</span>`;
-      return `<tr><td><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></span></div></td>
-        ${[0, 1, 2].map((i) => `<td class="num">${num(p.xPts?.[i])}</td>`).join("")}
-        <td class="num">${p.pStart != null && p.pStart < 0.6 ? `<span class="down">${pct(p.pStart)}</span>` : pct(p.pStart)}</td>
-        <td><span class="sub" style="font-size:12.5px">${(p.notes || []).map(esc).join("<br>")}</span></td></tr>`;
-    }).join("");
-    return `<p class="lede">Ожидаемые очки текущих 15 игроков на ближайшие три тура и вероятность выхода в старте. Красным — шанс старта ниже 60%. Метка «мало минут» — меньше 60% игрового времени в последних 5 матчах.</p>
-      <div class="table-wrap"><table><thead><tr><th>Игрок</th><th class="num">Тур N</th><th class="num">N+1</th><th class="num">N+2</th><th class="num">Старт</th><th>Пояснения</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    const all = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0));
+    const cards = all.map((p) => `<div class="pl-card"><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span><b>${esc(p.name)}</b><span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн · старт ${pct(p.pStart)}</span></span>
+        <span class="pl-x"><b>${num(p.xPts?.[0])}</b><span class="sub">${num(p.xPts?.[1])} · ${num(p.xPts?.[2])}</span></span></div>${noteHtml(p.note)}</div>`).join("");
+    return `<p class="lede">Все 15 игроков: на поле — ожидаемые очки на этот тур; ниже — коротко про каждого: какое он место среди всех игроков своей позиции в лиге, кто на позиции сильнейший, что за и что против. Справа в карточке — очки на этот и два следующих тура.</p>
+      <div class="pitch-wrap">${pitch({ xi: all, formation: "2-5-5-3", full: true }, [])}<div class="pl-cards">${cards}</div></div>`;
+  }
+  function tabIdeal(t) {
+    const r = t.rec, idl = r?.ideal;
+    if (!idl) return `<p class="empty">Сильнейший состав считается вместе с рекомендациями — пока его нет.</p>`;
+    const n = r.scenarios?.normal || {};
+    return `<div class="stat-line"><div><span>Сила вашего состава</span><b>${r.strength ? Math.round(r.strength * 100) + "%" : "—"}</b></div>
+        <div><span>Ваш план на тур</span><b>${num(n.xiPoints)}</b></div><div><span>Сильнейший возможный</span><b>${num(idl.xiPoints)}</b></div>
+        <div><span>Стоимость</span><b>${num(idl.cost)}</b></div></div>
+      <p class="lede">Лучший состав на этот тур из всех игроков лиги — только с базовыми правилами: 15 игроков 2/5/5/3, бюджет ${num(idl.budget, 0)}, не больше 3 из клуба. Сила — ожидаемые очки нормального сценария (основа с капитаном) против этого состава.</p>
+      <div class="pitch-wrap">${pitch(idl)}<div><h3 style="margin-bottom:8px">${esc(idl.formation)} · капитан ${esc(idl.captain)}, вице ${esc(idl.vice)}</h3>
+        <p class="sub">Игроки отбираются только из тех, у кого в туре есть матч и кто регулярно играет (фильтр минут).</p></div></div>`;
   }
   function tabFixtures(t, state) {
     const fx = t.fixtures;
@@ -348,8 +349,8 @@
     CUR = t;
     const st = (state[route.slug] = state[route.slug] || {});
     const s = t.squad || {};
-    const personalTab = ["scenarios", "squad", "report"].includes(route.tab);
-    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { scenarios: tabScenarios, squad: tabSquad, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
+    const personalTab = ["scenarios", "squad", "ideal", "report"].includes(route.tab);
+    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { scenarios: tabScenarios, squad: tabSquad, ideal: tabIdeal, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
     app.innerHTML = `<div class="t-head"><h1>${esc(t.name)}</h1><div class="t-facts">
         <div><span>Место</span><b>${int(s.place)} ${placeDiff(s.placeDiff)}</b></div><div><span>Очки</span><b>${int(s.score)}</b></div>
         <div><span>${esc(t.nextTour?.name || "Тур")}</span><b>${t.nextTour?.deadline ? cd(t.nextTour.deadline) : "—"}</b></div></div></div>
