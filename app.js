@@ -216,7 +216,7 @@
     app.innerHTML = `<div class="hero areal-hero">
         <div class="crest-big"><img src="logo.png" alt="AREAL FFC"></div>
         <h1>Рейтинг ${esc(ov.team || "AREAL FFC")}${lead ? `<span class="when">лидирует ${esc(lead.name)} · ${pc(lead.rating)}</span>` : ""}</h1>
-        <p class="meta">${A.rows.length} участников · ${leagues.length} лиги<br>Нажмите на строку, чтобы открыть команды участника</p></div>
+        <p class="meta">${A.rows.length} участников · ${leagues.length} лиги${A.snapshotAt ? ` · данные на ${esc(dateTime(A.snapshotAt))} МСК` : ""}<br>Нажмите на строку, чтобы открыть команды участника</p></div>
       <div class="table-wrap"><table class="areal">
         <thead><tr><th class="num">#</th><th>Участник</th><th>Рейтинг</th>${head}<th class="num">Всего ФО</th><th class="num">По месту</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
