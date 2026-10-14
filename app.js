@@ -100,7 +100,7 @@
 
   // ---------- навигация ----------
   function renderNav(ov, route) {
-    const items = [["#/", "Обзор", route.page === "home"]]
+    const items = [["#/", "Ареал", route.page === "areal"], ["#/me", "Мои команды", route.page === "home"]]
       .concat(ORDER.filter((s) => mine()[s]).map((s) => {
         const t = ov.tournaments.find((x) => x.slug === s);
         return [`#/t/${s}`, t ? t.short : s, route.slug === s];
@@ -112,13 +112,14 @@
     const p = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
     if (p[0] === "t" && ORDER.includes(p[1])) return { page: "t", slug: p[1], tab: TABS.some(([k]) => k === p[2]) ? p[2] : "scenarios" };
     if (p[0] === "data") return { page: "data" };
+    if (p[0] === "me") return { page: "home" };
     if (p[0] === "rules") return { page: "rules", tab: p[1] === "method" ? "method" : "rules" };
-    return { page: "home" };
+    return { page: "areal" };
   }
 
   // ---------- лента: 10 дней, дорожка на турнир ----------
   const KIND = { deadline: "Дедлайн", update: "Обновление данных", post: "Статистика тура", final: "Итоговые очки", top: "Составы топ-100" };
-  function strip(ov) {
+  function strip(ov, all = false) {
     const days = 10;
     const start = new Date(); start.setUTCHours(start.getUTCHours() - 18, 0, 0, 0);
     const startMsk = new Date(fmt(start.toISOString(), { year: "numeric", month: "2-digit", day: "2-digit" }).split(".").reverse().join("-") + "T00:00:00+03:00");
@@ -130,7 +131,7 @@
       const key = fmt(iso, { day: "numeric", month: "numeric" });
       return `<span class="${key === todayKey ? "today" : ""}">${fmt(iso, { weekday: "short", day: "numeric" })}</span>`;
     }).join("");
-    const lanes = ORDER.filter((s) => mine()[s]).map((slug) => {
+    const lanes = ORDER.filter((s) => all || mine()[s]).map((slug) => {
       const t = ov.tournaments.find((z) => z.slug === slug);
       const evs = ov.schedule.events.filter((e) => e.t === slug && x(e.at) >= 0 && x(e.at) <= 100);
       const marks = evs.map((e) => {
@@ -184,6 +185,48 @@
         <div class="table-wrap"><table class="stack"><thead><tr><th>Турнир</th><th class="num">Место</th><th class="num">Очки</th><th>Следующий тур</th><th>Капитан по модели</th><th>Трансферы</th><th></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="7" class="empty">У профиля нет команд в наших турнирах.</td></tr>'}</tbody></table></div></section>
       ${stale.length ? `<section><div class="callout">Ошибки при последней выгрузке: ${stale.map((s) => esc(s.name)).join("; ")}. Подробности — на странице <a href="#/data">Данные</a>.</div></section>` : ""}`;
+  }
+
+  // ---------- АРЕАЛ: сводка команды ----------
+  function arealPage(ov) {
+    const A = ov.areal || { rows: [], leaders: {} };
+    const leagues = ORDER.filter((s) => A.rows.some((r) => r.leagues[s]));
+    const short = Object.fromEntries(ov.tournaments.map((t) => [t.slug, t.short]));
+    const pc = (x, d = 1) => (x == null ? "—" : num(x * 100, d));
+    const best = Math.max(...A.rows.map((r) => r.rating || 0), 0.0001);
+    const lead = A.rows[0];
+    const head = leagues.map((s) => `<th class="num lg-col">${esc(short[s])}<span class="sub">лидер ${int(A.leaders[s]?.score)}</span></th>`).join("");
+    const rows = A.rows.map((r) => {
+      const cells = leagues.map((s) => {
+        const l = r.leagues[s];
+        if (!l) return `<td class="num lg-col"><span class="sub">—</span></td>`;
+        return `<td class="num lg-col"><b>${int(l.score)}</b><span class="sub">${pc(l.norm, 0)}% · ${int(l.place)} м.</span></td>`;
+      }).join("");
+      const me = r.id === PROFILE?.id;
+      return `<tr class="ar-row${me ? " mine" : ""}" data-pid="${esc(r.id)}" tabindex="0" title="Открыть команды: ${esc(r.name)}">
+        <td class="num rk">${r.rank}</td>
+        <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b><span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
+        <td class="rt"><div class="rt-bar"><i style="width:${((r.rating || 0) / best * 100).toFixed(1)}%"></i></div><b>${pc(r.rating)}</b></td>
+        ${cells}
+        <td class="num"><b>${int(r.total)}</b><span class="sub">+${int(r.lastTour)} за тур</span></td>
+        <td class="num"><span title="Средняя доля обойдённых соперников по всем лигам">${pc(r.byPlace)}</span><span class="sub">${r.rankByPlace}-е место</span></td>
+      </tr>`;
+    }).join("");
+    const leadersLine = leagues.map((s) => `${esc(short[s])} — ${int(A.leaders[s]?.score)} («${esc(A.leaders[s]?.name || "")}», из ${int(A.leaders[s]?.total)})`).join("; ");
+    app.innerHTML = `<div class="hero areal-hero">
+        <div class="crest-big"><img src="logo.png" alt="AREAL FFC"></div>
+        <h1>Рейтинг ${esc(ov.team || "AREAL FFC")}${lead ? `<span class="when">лидирует ${esc(lead.name)} · ${pc(lead.rating)}</span>` : ""}</h1>
+        <p class="meta">${A.rows.length} участников · ${leagues.length} лиги<br>Нажмите на строку, чтобы открыть команды участника</p></div>
+      <div class="table-wrap"><table class="areal">
+        <thead><tr><th class="num">#</th><th>Участник</th><th>Рейтинг</th>${head}<th class="num">Всего ФО</th><th class="num">По месту</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      <p class="lede" style="margin-top:12px">Рейтинг — очки команды в каждой лиге, делённые на очки лидера общего зачёта sports.ru, в среднем по лигам, где участник играет. Под очками — этот процент и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
+      ${strip(ov, true)}`;
+    app.querySelectorAll(".ar-row").forEach((tr) => {
+      const go = () => { store.set(tr.dataset.pid); location.hash = "#/me"; };
+      tr.addEventListener("click", go);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    });
   }
 
   // ---------- турнир ----------
@@ -359,8 +402,9 @@
       if (route.page === "t") await tournamentPage(route);
       else if (route.page === "data") dataPage(ov);
       else if (route.page === "rules") await rulesPage(route);
+      else if (route.page === "areal") arealPage(ov);
       else await home(ov);
-      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : route.page === "rules" ? "Правила — " : ""}${ov.team || "AREAL FFC"}`;
+      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : route.page === "rules" ? "Правила — " : route.page === "home" ? "Мои команды — " : ""}${ov.team || "AREAL FFC"}`;
     } catch (e) {
       app.innerHTML = `<div class="callout">Не удалось загрузить данные: ${esc(e.message)}. Обновите страницу через минуту — сайт мог как раз пересобираться.</div>`;
     }

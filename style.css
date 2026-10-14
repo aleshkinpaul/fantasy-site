@@ -96,6 +96,25 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 6
 .profile-pick[hidden] { display: none; }
 .who-name { color: var(--pitch); }
 
+/* АРЕАЛ */
+.areal-hero { grid-template-columns: auto 1fr auto; align-items: center; }
+.areal-hero h1 { max-width: none; font-size: clamp(28px, 4.6vw, 52px); }
+.areal-hero h1 .when { font-size: .62em; margin-top: 6px; }
+.crest-big img { width: 96px; height: 96px; border-radius: 50%; display: block; box-shadow: 0 0 0 4px var(--yellow); }
+.areal td, .areal th { vertical-align: middle; }
+.areal .rk { font-size: 18px; font-weight: 800; color: var(--muted); width: 36px; }
+.areal tr:first-child .rk { color: var(--yellow); }
+.ar-row { cursor: pointer; }
+.ar-row:hover td, .ar-row:focus-visible td { background: var(--chalk); }
+.ar-row.mine td:first-child { box-shadow: inset 3px 0 0 var(--pitch); }
+.areal .ava { width: 40px; height: 40px; }
+.rt { min-width: 150px; }
+.rt b { font-size: 20px; font-weight: 800; }
+.rt-bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.rt-bar i { display: block; height: 100%; background: var(--pitch); border-radius: 3px; }
+.areal tbody tr:first-child .rt-bar i { background: var(--yellow); }
+.lg-col b { font-size: 16px; }
+
 /* лента матчдея */
 .strip { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px 12px; margin-bottom: 36px; }
 .strip-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -276,6 +295,9 @@ section > h2 { margin-bottom: 14px; }
   .scen > div:first-child { border-top: 0; }
   .pitch-wrap, .split { grid-template-columns: 1fr; }
   .hero { grid-template-columns: 1fr; }
+  .areal-hero { grid-template-columns: auto 1fr; }
+  .areal-hero .meta { grid-column: 1 / -1; }
+  .crest-big img { width: 64px; height: 64px; }
   .hero .meta { text-align: left; }
   .ev { grid-template-columns: 1fr auto; }
   .ev .t, .ev .note { grid-column: 1 / -1; }
