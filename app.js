@@ -192,13 +192,18 @@
     if (!list) return `<p class="empty">Нет расчёта по текущему составу.</p>`;
     const rank = { ВР: 0, ЗЩ: 1, ПЗ: 2, НП: 3 };
     const rows = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0)).map((p) => {
-      const pill = p.filter === "ok" ? "" : `<span class="pill ${/травм|дискв|out/i.test(p.filter) ? "bad" : "warn"}">${esc(p.filter)}</span>`;
+      const FL = {
+        "нет": ["мало минут", "warn", "Сыграл меньше 60% минут в последних 5 матчах — модель не предлагает его в трансферы и с осторожностью ставит в основу"],
+        "исключение": ["мало минут · в форме", "ok", "Меньше 60% минут за 5 матчей, но высокий шанс старта и сильные последние матчи — допущен как исключение"],
+      };
+      const fl = FL[p.filter];
+      const pill = !p.filter || p.filter === "ok" ? "" : `<span class="pill ${fl ? fl[1] : "warn"}" title="${esc(fl ? fl[2] : p.filter)}">${esc(fl ? fl[0] : p.filter)}</span>`;
       return `<tr><td><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></span></div></td>
         ${[0, 1, 2].map((i) => `<td class="num">${num(p.xPts?.[i])}</td>`).join("")}
         <td class="num">${p.pStart != null && p.pStart < 0.6 ? `<span class="down">${pct(p.pStart)}</span>` : pct(p.pStart)}</td>
         <td><span class="sub" style="font-size:12.5px">${(p.notes || []).map(esc).join("<br>")}</span></td></tr>`;
     }).join("");
-    return `<p class="lede">Ожидаемые очки текущих 15 игроков на ближайшие три тура и вероятность выхода в старте. Красным — шанс старта ниже 60%.</p>
+    return `<p class="lede">Ожидаемые очки текущих 15 игроков на ближайшие три тура и вероятность выхода в старте. Красным — шанс старта ниже 60%. Метка «мало минут» — меньше 60% игрового времени в последних 5 матчах.</p>
       <div class="table-wrap"><table><thead><tr><th>Игрок</th><th class="num">Тур N</th><th class="num">N+1</th><th class="num">N+2</th><th class="num">Старт</th><th>Пояснения</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   function tabFixtures(t, state) {
