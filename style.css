@@ -233,6 +233,13 @@ section > h2 { margin-bottom: 14px; }
 .report table { display: block; overflow-x: auto; margin: 12px 0; font-size: 13px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
 .report th, .report td { padding: 6px 10px; }
 
+/* правила */
+.guide > h2:first-child { display: none; }
+.guide h3 { font-size: 17px; margin-top: 26px; }
+.guide ul { padding-left: 20px; }
+.guide table { display: table; width: auto; }
+.guide td:not(:first-child), .guide th:not(:first-child) { text-align: right; white-space: nowrap; }
+
 /* данные */
 .ev-list { display: flex; flex-direction: column; }
 .ev { display: grid; grid-template-columns: 150px 80px 1fr auto; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }

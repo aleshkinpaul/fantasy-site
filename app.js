@@ -67,13 +67,14 @@
         const t = ov.tournaments.find((x) => x.slug === s);
         return [`#/t/${s}`, t ? t.short : s, route.slug === s];
       }))
-      .concat([["#/data", "Данные", route.page === "data"]]);
+      .concat([["#/data", "Данные", route.page === "data"], ["#/rules", "Правила", route.page === "rules"]]);
     nav.innerHTML = items.map(([h, l, on]) => `<a href="${h}"${on ? ' aria-current="page"' : ""}>${esc(l)}</a>`).join("");
   }
   function parse() {
     const p = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
     if (p[0] === "t" && ORDER.includes(p[1])) return { page: "t", slug: p[1], tab: TABS.some(([k]) => k === p[2]) ? p[2] : "scenarios" };
     if (p[0] === "data") return { page: "data" };
+    if (p[0] === "rules") return { page: "rules", tab: p[1] === "method" ? "method" : "rules" };
     return { page: "home" };
   }
 
@@ -290,6 +291,16 @@
         <div class="ev-list">${evs || '<p class="empty">Событий в ближайшие дни нет.</p>'}</div></section>`;
   }
 
+  // ---------- правила и методика ----------
+  async function rulesPage(route) {
+    const g = await get("guide");
+    const md = g[route.tab] || "";
+    const html = window.marked ? window.marked.parse(md) : `<pre style="white-space:pre-wrap">${esc(md)}</pre>`;
+    app.innerHTML = `<div class="t-head"><h1>Правила</h1></div>
+      <nav class="tabs" aria-label="Разделы"><a href="#/rules"${route.tab === "rules" ? ' aria-current="page"' : ""}>Правила игры</a><a href="#/rules/method"${route.tab === "method" ? ' aria-current="page"' : ""}>Как считает модель</a></nav>
+      <article class="report guide">${html}</article>`;
+  }
+
   // ---------- роутер ----------
   async function render() {
     const route = parse();
@@ -299,8 +310,9 @@
       foot.innerHTML = `Последнее обновление данных ${esc(dateTime(ov.builtAt))} МСК · время везде московское`;
       if (route.page === "t") await tournamentPage(route);
       else if (route.page === "data") dataPage(ov);
+      else if (route.page === "rules") await rulesPage(route);
       else await home(ov);
-      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : ""}Ducks`;
+      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : route.page === "rules" ? "Правила — " : ""}Ducks`;
     } catch (e) {
       app.innerHTML = `<div class="callout">Не удалось загрузить данные: ${esc(e.message)}. Обновите страницу через минуту — сайт мог как раз пересобираться.</div>`;
     }
