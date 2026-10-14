@@ -169,6 +169,27 @@ section > h2 { margin-bottom: 14px; }
 .p-man.c .shirt { background: var(--yellow); }
 .p-man.low .shirt { box-shadow: 0 0 0 3px var(--red); }
 
+/* логотипы и фото */
+.crest { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; margin-right: 6px; }
+.crest.xs { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+.team-name { display: inline-flex; align-items: center; }
+.face { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--line); flex: none; }
+.face.sm { width: 24px; height: 24px; }
+.face.crest-only { object-fit: contain; background: transparent; border-radius: 0; padding: 2px; }
+.face.out { opacity: .55; filter: grayscale(1); }
+.who-cell { display: flex; gap: 10px; align-items: center; }
+td.who-cell { display: table-cell; }
+td.who-cell > img { float: left; margin-right: 10px; }
+.tr-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tr-line .crest { margin-right: 0; }
+.p-man .shirt { position: relative; width: 46px; height: 46px; overflow: visible; }
+.p-man .shirt .ph { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; object-position: top; }
+.p-man .shirt .ph.crest-only { object-fit: contain; padding: 7px; }
+.p-man .shirt .badge { position: absolute; top: -4px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--yellow); color: #15202B; font: 800 10.5px/18px "Golos Text", system-ui, sans-serif; font-style: normal; box-shadow: 0 0 0 2px var(--pitch); }
+.p-man .shirt .badge.v { background: #F3F5F1; }
+.p-man .shirt .mini { position: absolute; bottom: -3px; left: -5px; width: 18px; height: 18px; object-fit: contain; background: #F3F5F1; border-radius: 50%; padding: 2px; }
+.p-man.c .shirt { background: #F3F5F1; box-shadow: 0 0 0 3px var(--yellow); }
+
 /* календарь сложности */
 .fdr { min-width: 680px; }
 .fdr td.cell { padding: 0; height: 1px; }

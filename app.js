@@ -47,6 +47,16 @@
     });
     return cache[name];
   }
+  let CUR = null; // данные открытого турнира: логотипы клубов и фото игроков
+  const crest = (team, cls = "crest") => {
+    const u = CUR?.logos?.[team];
+    return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+  };
+  const face = (id, cls = "face") => {
+    const u = id != null && CUR?.photos?.[String(id)];
+    return u ? `<img class="${cls}" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+  };
+  const clubOf = (s) => (String(s || "").match(/\(([^,)]+)/) || [])[1];
   const lastName = (n) => { const p = String(n || "").split(" "); return p.length > 1 ? p.slice(1).join(" ") : p[0]; };
   const placeDiff = (d) => (!d ? "" : d > 0 ? `<span class="up">▲ ${int(d)}</span>` : `<span class="down">▼ ${int(-d)}</span>`);
 
@@ -140,13 +150,13 @@
     const lines = { ВР: [], ЗЩ: [], ПЗ: [], НП: [] };
     (sc.xi || []).forEach((p) => (lines[p.pos] || (lines[p.pos] = [])).push(p));
     const man = (p) => `<div class="p-man${p.captain || p.name === sc.captain ? " c" : ""}${p.pStart != null && p.pStart < 0.6 ? " low" : ""}" title="${esc(`${p.name}, ${p.team} · ${p.price} млн · старт ${pct(p.pStart)}`)}">
-        <div class="shirt">${p.name === sc.captain ? "К" : p.name === sc.vice ? "В" : num(p.xPts?.[0], 0)}</div><b>${esc(lastName(p.name))}</b>${esc(p.team)}<br>${num(p.xPts?.[0])}</div>`;
+        <div class="shirt">${face(p.id, "ph") || crest(p.team, "ph crest-only") || num(p.xPts?.[0], 0)}${p.name === sc.captain ? '<i class="badge">К</i>' : p.name === sc.vice ? '<i class="badge v">В</i>' : ""}${face(p.id, "ph") ? crest(p.team, "mini") : ""}</div><b>${esc(lastName(p.name))}</b>${esc(p.team)}<br>${num(p.xPts?.[0])}</div>`;
     return `<div class="pitch" aria-label="Схема ${esc(sc.formation)}">${["ВР", "ЗЩ", "ПЗ", "НП"].map((k) => `<div class="p-line">${lines[k].map(man).join("")}</div>`).join("")}</div>`;
   }
   function scenarioDetail(sc) {
     const bench = (sc.bench || []).map((p, i) => `<tr><td class="num">${i + 1}</td><td>${esc(p.name)}<span class="sub">${esc(p.pos)} · ${esc(p.team)}</span></td><td class="num">${num(p.xPts?.[0])}</td><td class="num">${pct(p.pStart)}</td></tr>`).join("");
     const trs = (sc.transfers || []).map((t) => `<div class="callout" style="border-left-color:var(--pitch)">
-        <p><span class="tr-out">${esc(t.out?.name)}</span> → <b>${esc(t.in?.name)}</b> <span class="sub">${esc(t.type || "")} · +${num(t.gainTour)} на тур, +${num(t.gainHorizon)} за 3 тура</span></p>
+        <p class="tr-line">${face(t.out?.id, "face sm out")}<span class="tr-out">${esc(t.out?.name)}</span> → ${face(t.in?.id, "face sm")}${crest(t.in?.team)}<b>${esc(t.in?.name)}</b> <span class="sub">${esc(t.type || "")} · +${num(t.gainTour)} на тур, +${num(t.gainHorizon)} за 3 тура</span></p>
         ${(t.whyIn || []).length ? `<ul style="margin:8px 0 0;padding-left:18px">${t.whyIn.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
         ${t.whyOut ? `<p class="sub" style="margin-top:6px">Почему продаём: ${esc(t.whyOut)}</p>` : ""}</div>`).join("");
     const plan = (sc.futurePlan || []).map((f) => `<p><b>N+${f.tour}:</b> ${(f.transfers || []).map((t) => `<span class="tr-out">${esc(lastName(t.out?.name))}</span> → ${esc(lastName(t.in?.name))}`).join(", ") || "без трансферов"}</p>`).join("");
@@ -183,7 +193,7 @@
     const rank = { ВР: 0, ЗЩ: 1, ПЗ: 2, НП: 3 };
     const rows = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0)).map((p) => {
       const pill = p.filter === "ok" ? "" : `<span class="pill ${/травм|дискв|out/i.test(p.filter) ? "bad" : "warn"}">${esc(p.filter)}</span>`;
-      return `<tr><td>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></td>
+      return `<tr><td class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span>${esc(p.name)} ${pill}<span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн</span></span></td>
         ${[0, 1, 2].map((i) => `<td class="num">${num(p.xPts?.[i])}</td>`).join("")}
         <td class="num">${p.pStart != null && p.pStart < 0.6 ? `<span class="down">${pct(p.pStart)}</span>` : pct(p.pStart)}</td>
         <td><span class="sub" style="font-size:12.5px">${(p.notes || []).map(esc).join("<br>")}</span></td></tr>`;
@@ -199,13 +209,13 @@
     const sum = (r) => r.tours.reduce((s, tr) => s + tr.m.reduce((a, m) => a + (m[key] || 3), 0) + (tr.m.length ? 0 : 6), 0);
     const teams = fx.teams.slice().sort((a, b) => sum(a) - sum(b));
     const head = (fx.tours || []).map((x) => `<th>${esc(x.name)}<span class="sub">${esc(fmt(x.deadline, { day: "numeric", month: "short" }))}</span></th>`).join("");
-    const rows = teams.map((r) => `<tr><td><b>${esc(r.team)}</b><span class="sub">${mode === "attack" ? `xG ${num(r.horizon?.xgFor)}` : `сухих ≈ ${num(r.horizon?.csExpected)}`}</span></td>
-      ${r.tours.map((tr) => `<td class="cell">${tr.m.length ? tr.m.map((m) => `<span class="c lvl${m[key] || 0}" title="${esc(`${m.opp} (${m.home ? "дома" : "в гостях"}) · голы ${num(m.xf, 2)}:${num(m.xa, 2)} · сухой ${pct(m.cs)} · ${m.src === "odds" ? "по коэффициентам" : "по модели"}`)}">${esc(m.opp)} ${m.home ? "(д)" : "(г)"}<small>${mode === "attack" ? `xG ${num(m.xf)}` : `сухой ${pct(m.cs)}`}</small></span>`).join("") : `<span class="c lvl0">нет матча</span>`}</td>`).join("")}</tr>`).join("");
+    const rows = teams.map((r) => `<tr><td><b class="team-name">${crest(r.team)}${esc(r.team)}</b><span class="sub">${mode === "attack" ? `xG ${num(r.horizon?.xgFor)}` : `сухих ≈ ${num(r.horizon?.csExpected)}`}</span></td>
+      ${r.tours.map((tr) => `<td class="cell">${tr.m.length ? tr.m.map((m) => `<span class="c lvl${m[key] || 0}" title="${esc(`${m.opp} (${m.home ? "дома" : "в гостях"}) · голы ${num(m.xf, 2)}:${num(m.xa, 2)} · сухой ${pct(m.cs)} · ${m.src === "odds" ? "по коэффициентам" : "по модели"}`)}">${crest(m.opp, "crest xs")}${esc(m.opp)} ${m.home ? "(д)" : "(г)"}<small>${mode === "attack" ? `xG ${num(m.xf)}` : `сухой ${pct(m.cs)}`}</small></span>`).join("") : `<span class="c lvl0">нет матча</span>`}</td>`).join("")}</tr>`).join("");
     return `<div class="seg" role="group" aria-label="Режим"><button data-fx="attack" aria-pressed="${mode === "attack"}">Для атаки</button><button data-fx="defence" aria-pressed="${mode !== "attack"}">Для обороны</button></div>
       <p class="lede">Сложность соперника от 1 (зелёный, легко) до 5 (красный, тяжело) на 5 туров вперёд; сверху — команды с самым удобным отрезком. Ближайший тур — по коэффициентам букмекеров, дальше — по модели рейтингов.</p>
       <div class="table-wrap"><table class="fdr"><thead><tr><th>Команда</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  const bars = (list, f, cls = "") => `<div class="bars">${list.map((x) => `<div class="bar"><span>${esc(x.player)}</span><span class="fill"><i class="${cls}" style="width:${Math.min(100, x[f] || 0)}%"></i></span><span class="num">${num(x[f], 0)}%</span></div>`).join("")}</div>`;
+  const bars = (list, f, cls = "") => `<div class="bars">${list.map((x) => `<div class="bar"><span class="who-cell">${face(x.id, "face sm") || crest(clubOf(x.player) || x.player, "face sm crest-only")}<span>${esc(x.player)}</span></span><span class="fill"><i class="${cls}" style="width:${Math.min(100, x[f] || 0)}%"></i></span><span class="num">${num(x[f], 0)}%</span></div>`).join("")}</div>`;
   function tabTop(t) {
     const tp = t.top;
     if (!tp || !tp.last) return `<p class="empty">Данных топ-100 пока нет.</p>`;
@@ -240,6 +250,7 @@
   const state = {};
   async function tournamentPage(route) {
     const t = await get(route.slug);
+    CUR = t;
     const st = (state[route.slug] = state[route.slug] || {});
     const s = t.squad || {};
     const body = { scenarios: tabScenarios, squad: tabSquad, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
