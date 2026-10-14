@@ -13,6 +13,8 @@
   --red: #D6453D;
   --red-soft: #F8DEDA;
   --d1: #1D5A40; --d2: #8DBF8B; --d3: #E6E4D8; --d4: #F0A07A; --d5: #C8453B;
+  --gk-bg: #F7E9B0; --gk-ink: #6B5410; --df-bg: #D3E3F6; --df-ink: #1F4A7A;
+  --mf-bg: #D4ECD7; --mf-ink: #22603A; --fw-bg: #F6D6D1; --fw-ink: #8A2C24;
   --radius: 10px;
   --shadow: 0 1px 0 rgba(21, 32, 43, .06);
   color-scheme: light;
@@ -23,6 +25,8 @@
     --pitch: #5FA37B; --pitch-soft: #1F3A2B; --yellow: #E0B84D; --yellow-soft: #3A3218; --club: #E0B84D;
     --red: #EE6A60; --red-soft: #3D2220;
     --d1: #3F8C61; --d2: #6F9F6E; --d3: #3A403B; --d4: #B9714F; --d5: #B5443B;
+    --gk-bg: #46391A; --gk-ink: #F0D98C; --df-bg: #1E3450; --df-ink: #AECBEE;
+    --mf-bg: #1F3A2B; --mf-ink: #A8DBB3; --fw-bg: #48241F; --fw-ink: #F2ABA3;
     color-scheme: dark;
   }
 }
@@ -333,3 +337,24 @@ section > h2 { margin-bottom: 14px; }
   .now-line { animation: blink 2.4s ease-in-out infinite; }
   @keyframes blink { 50% { opacity: .45; } }
 }
+
+/* позиции: пастельные квадратики */
+.pos { display: inline-block; min-width: 26px; padding: 1px 5px; border-radius: 5px; font-size: 11px; font-weight: 700;
+  line-height: 16px; text-align: center; letter-spacing: .02em; vertical-align: 1px; }
+.pos-gk { background: var(--gk-bg); color: var(--gk-ink); }
+.pos-df { background: var(--df-bg); color: var(--df-ink); }
+.pos-mf { background: var(--mf-bg); color: var(--mf-ink); }
+.pos-fw { background: var(--fw-bg); color: var(--fw-ink); }
+.pos-filter button { display: inline-flex; align-items: center; }
+.pos-filter button .pos { font-size: 12px; }
+.pos-filter button[aria-pressed="true"] .pos { box-shadow: 0 0 0 2px var(--chalk); }
+
+/* таблица всех игроков */
+.plt td, .plt th { padding-top: 6px; padding-bottom: 6px; vertical-align: middle; }
+.plt .who-cell { gap: 6px; white-space: nowrap; }
+.plt .who-cell .crest { margin-right: 0; }
+.plt td.opp { white-space: nowrap; }
+.plt td.opp .crest { margin-right: 2px; }
+.plt .c-cell { color: var(--muted); }
+.plt tr.mine td { background: var(--pitch-soft); }
+.plt tr.dim td { opacity: .6; }
