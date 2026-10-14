@@ -5,13 +5,14 @@
   --ink: #15202B;
   --muted: #5E6A63;
   --line: #D9DED6;
-  --pitch: #2E6B4A;
+  --pitch: #1D5A40;
+  --club: #073A2A;
   --pitch-soft: #DCEBDF;
-  --yellow: #F2C230;
+  --yellow: #E0B84D;
   --yellow-soft: #FCF1CC;
   --red: #D6453D;
   --red-soft: #F8DEDA;
-  --d1: #2E6B4A; --d2: #8DBF8B; --d3: #E6E4D8; --d4: #F0A07A; --d5: #C8453B;
+  --d1: #1D5A40; --d2: #8DBF8B; --d3: #E6E4D8; --d4: #F0A07A; --d5: #C8453B;
   --radius: 10px;
   --shadow: 0 1px 0 rgba(21, 32, 43, .06);
   color-scheme: light;
@@ -19,7 +20,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --chalk: #121A16; --paper: #18221D; --ink: #E8EEE9; --muted: #9AA8A0; --line: #2A3631;
-    --pitch: #5FA37B; --pitch-soft: #1F3A2B; --yellow: #F2C230; --yellow-soft: #3A3218;
+    --pitch: #5FA37B; --pitch-soft: #1F3A2B; --yellow: #E0B84D; --yellow-soft: #3A3218; --club: #E0B84D;
     --red: #EE6A60; --red-soft: #3D2220;
     --d1: #3F8C61; --d2: #6F9F6E; --d3: #3A403B; --d4: #B9714F; --d5: #B5443B;
     color-scheme: dark;
@@ -47,9 +48,8 @@ p { margin: 0; }
   backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; }
-.brand svg { width: 30px; height: 30px; flex: none; }
-.brand svg rect { fill: var(--pitch); }
-.brand svg circle, .brand svg path { fill: none; stroke: var(--chalk); stroke-width: 2.2; }
+.brand img { width: 36px; height: 36px; border-radius: 50%; flex: none; display: block; }
+.brand span { letter-spacing: .02em; }
 .brand span { display: flex; flex-direction: column; line-height: 1.05; }
 .brand small { font-weight: 400; color: var(--muted); font-size: 12px; }
 
@@ -73,6 +73,18 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 6
 .hero h1 .when { display: block; color: var(--pitch); }
 .hero .meta { color: var(--muted); text-align: right; font-size: 14px; }
 .hero .meta b { color: var(--ink); font-weight: 600; }
+
+/* выбор профиля */
+.profile-pick { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.profile-pick select {
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 30px 6px 12px; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+.profile-pick[hidden] { display: none; }
+.who-name { color: var(--pitch); }
 
 /* лента матчдея */
 .strip { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px 12px; margin-bottom: 36px; }
@@ -259,6 +271,9 @@ section > h2 { margin-bottom: 14px; }
   .ev .t, .ev .note { grid-column: 1 / -1; }
   .top { gap: 14px; }
   .brand small { display: none; }
+  .top { flex-wrap: wrap; row-gap: 8px; }
+  .profile-pick span { display: none; }
+  .top nav { order: 3; width: 100%; }
   .stack thead { display: none; }
   .stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px; border-bottom: 1px solid var(--line); }
   .stack tbody tr:last-child { border-bottom: 0; }

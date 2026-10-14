@@ -1,4 +1,4 @@
-/* Дашборд фэнтези-штаба: обзор, турниры, данные. Без сборщика — чистый JS. */
+/* Фэнтези-штаб AREAL FFC: обзор, турниры, данные; выбор профиля участника. Без сборщика — чистый JS. */
 (() => {
   "use strict";
   const TZ = "Europe/Moscow";
@@ -11,6 +11,25 @@
   const app = document.getElementById("app");
   const nav = document.getElementById("nav");
   const foot = document.getElementById("foot");
+  const whoSel = document.getElementById("who");
+
+  // ---------- профиль участника (выбор хранится в браузере) ----------
+  const PKEY = "areal.profile";
+  const store = {
+    get() { try { return localStorage.getItem(PKEY); } catch (e) { return null; } },
+    set(v) { try { localStorage.setItem(PKEY, v); } catch (e) { /* приватный режим — живём без памяти */ } },
+  };
+  let PROFILE = null; // объект профиля из overview.profiles
+  function pickProfile(ov) {
+    const saved = store.get();
+    PROFILE = ov.profiles.find((p) => p.id === saved) || ov.profiles.find((p) => p.main) || ov.profiles[0] || null;
+    if (ov.profiles.length > 1) {
+      whoSel.innerHTML = ov.profiles.map((p) => `<option value="${esc(p.id)}"${p === PROFILE ? " selected" : ""}>${esc(p.name)}</option>`).join("");
+      document.getElementById("who-wrap").hidden = false;
+    }
+  }
+  whoSel.addEventListener("change", () => { store.set(whoSel.value); render(); });
+  const mine = () => (PROFILE ? PROFILE.tournaments : {});
 
   // ---------- утилиты ----------
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -63,7 +82,7 @@
   // ---------- навигация ----------
   function renderNav(ov, route) {
     const items = [["#/", "Обзор", route.page === "home"]]
-      .concat(ORDER.map((s) => {
+      .concat(ORDER.filter((s) => mine()[s]).map((s) => {
         const t = ov.tournaments.find((x) => x.slug === s);
         return [`#/t/${s}`, t ? t.short : s, route.slug === s];
       }))
@@ -92,7 +111,7 @@
       const key = fmt(iso, { day: "numeric", month: "numeric" });
       return `<span class="${key === todayKey ? "today" : ""}">${fmt(iso, { weekday: "short", day: "numeric" })}</span>`;
     }).join("");
-    const lanes = ORDER.map((slug) => {
+    const lanes = ORDER.filter((s) => mine()[s]).map((slug) => {
       const t = ov.tournaments.find((z) => z.slug === slug);
       const evs = ov.schedule.events.filter((e) => e.t === slug && x(e.at) >= 0 && x(e.at) <= 100);
       const marks = evs.map((e) => {
@@ -118,13 +137,15 @@
 
   // ---------- обзор ----------
   async function home(ov) {
-    const next = ov.tournaments.filter((t) => t.nextTour.deadline && new Date(t.nextTour.deadline) > Date.now())
+    const my = mine();
+    const tours = ov.tournaments.filter((t) => my[t.slug]).map((t) => ({ ...t, ...my[t.slug] }));
+    const next = tours.filter((t) => t.nextTour.deadline && new Date(t.nextTour.deadline) > Date.now())
       .sort((a, b) => new Date(a.nextTour.deadline) - new Date(b.nextTour.deadline))[0];
     const hero = next
       ? `<div class="hero"><h1>${esc(next.name)}, ${esc(next.nextTour.name)}<span class="when">дедлайн через ${left(next.nextTour.deadline)}</span></h1>
          <p class="meta">${esc(weekdayTime(next.nextTour.deadline))} МСК<br>Модель советует капитаном <b>${esc(next.pick.captain || "—")}</b></p></div>`
       : `<div class="hero"><h1>Открытых туров нет<span class="when">ждём календарь</span></h1></div>`;
-    const rows = ov.tournaments.slice().sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)).map((t) => {
+    const rows = tours.slice().sort((a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug)).map((t) => {
       const p = t.pick || {};
       const tr = (p.transfers || []).map((x) => `<span class="tr-out">${esc(lastName(x.out))}</span> → <span class="tr-in">${esc(lastName(x.in))}</span>`).join("<br>");
       return `<tr class="tourn-row">
@@ -139,10 +160,10 @@
     }).join("");
     const stale = ov.sources.filter((s) => !s.ok);
     app.innerHTML = `${hero}${strip(ov)}
-      <section><h2>Мои команды</h2>
+      <section><h2>Команды · <span class="who-name">${esc(PROFILE?.name || "")}</span></h2>
         <p class="lede">Место и очки — с sports.ru; совет — нормальный сценарий модели: капитан, трансферы и число пунктов, которые стоит перепроверить.</p>
         <div class="table-wrap"><table class="stack"><thead><tr><th>Турнир</th><th class="num">Место</th><th class="num">Очки</th><th>Следующий тур</th><th>Капитан по модели</th><th>Трансферы</th><th></th></tr></thead>
-        <tbody>${rows}</tbody></table></div></section>
+        <tbody>${rows || '<tr><td colspan="7" class="empty">У профиля нет команд в наших турнирах.</td></tr>'}</tbody></table></div></section>
       ${stale.length ? `<section><div class="callout">Ошибки при последней выгрузке: ${stale.map((s) => esc(s.name)).join("; ")}. Подробности — на странице <a href="#/data">Данные</a>.</div></section>` : ""}`;
   }
 
@@ -226,20 +247,21 @@
     const tp = t.top;
     if (!tp || !tp.last) return `<p class="empty">Данных топ-100 пока нет.</p>`;
     const l = tp.last;
+    const showMine = t.mainProfile; // сравнение «мои очки» в сводке топа считается только для основного профиля
     const forms = Object.entries(l.formations || {}).slice(0, 5).map(([k, v]) => ({ player: k, pct: v }));
     const tripled = Object.entries(l.clubs?.tripledClubs || {}).slice(0, 6).map(([k, v]) => ({ player: k, pct: (v / (l.squadsWithData || tp.topN || 100)) * 100 }));
-    const hist = (tp.tours || []).map((x) => `<tr><td>${esc(x.name)}</td><td class="num">${num(x.tourScore?.mean)}</td><td class="num">${num(x.tourScore?.max, 0)}</td><td class="num">${x.mySquad == null ? "—" : `<b class="${x.mySquad >= (x.tourScore?.mean || 0) ? "up" : "down"}">${int(x.mySquad)}</b>`}</td></tr>`).join("");
-    const missing = l.mySquad?.topTemplateMissing || [];
+    const hist = (tp.tours || []).map((x) => `<tr><td>${esc(x.name)}</td><td class="num">${num(x.tourScore?.mean)}</td><td class="num">${num(x.tourScore?.max, 0)}</td><td class="num">${!showMine || x.mySquad == null ? "—" : `<b class="${x.mySquad >= (x.tourScore?.mean || 0) ? "up" : "down"}">${int(x.mySquad)}</b>`}</td></tr>`).join("");
+    const missing = showMine ? l.mySquad?.topTemplateMissing || [] : [];
     return `<p class="lede">${esc(l.name)}: ${int(l.squadsWithData)} команд из топ-${int(tp.topN)} общего зачёта. Обновлено ${esc(dateTime(tp.generatedAt))} МСК.</p>
       <div class="stat-line"><div><span>Среднее в топе</span><b>${num(l.tourScore?.mean)}</b></div><div><span>Медиана</span><b>${num(l.tourScore?.median)}</b></div>
-        <div><span>Лучший</span><b>${int(l.tourScore?.max)}</b></div><div><span>Мои очки</span><b class="${(l.mySquad?.score ?? 0) >= (l.tourScore?.mean ?? 0) ? "up" : "down"}">${int(l.mySquad?.score)}</b></div>
+        <div><span>Лучший</span><b>${int(l.tourScore?.max)}</b></div>${showMine ? `<div><span>Мои очки</span><b class="${(l.mySquad?.score ?? 0) >= (l.tourScore?.mean ?? 0) ? "up" : "down"}">${int(l.mySquad?.score)}</b></div>` : ""}
         <div><span>Трансферов в среднем</span><b>${num(l.transfers?.perSquadMean)}</b></div></div>
       ${missing.length ? `<div class="callout">Популярные в топе, но нет у меня: ${missing.map(esc).join(", ")}.</div>` : ""}
       <div class="split"><section style="margin-top:0"><h2>Владение</h2>${bars((l.ownership || []).slice(0, 15), "pct")}</section>
         <section style="margin-top:0"><h2>Капитаны</h2>${bars((l.captains || []).slice(0, 8), "pct", "c")}
           <h2 style="margin-top:28px">Покупали чаще всего</h2>${bars((l.transfers?.mostBought || []).slice(0, 8), "pct")}</section></div>
       <div class="split"><section><h2>Схемы</h2>${bars(forms, "pct")}</section><section><h2>Три игрока одного клуба</h2>${bars(tripled, "pct")}</section></div>
-      <section><h2>По турам</h2><div class="table-wrap"><table><thead><tr><th>Тур</th><th class="num">Среднее топ-100</th><th class="num">Максимум</th><th class="num">Мои очки</th></tr></thead><tbody>${hist}</tbody></table></div></section>`;
+      <section><h2>По турам</h2><div class="table-wrap"><table><thead><tr><th>Тур</th><th class="num">Среднее топ-100</th><th class="num">Максимум</th><th class="num">${showMine ? "Мои очки" : ""}</th></tr></thead><tbody>${hist}</tbody></table></div></section>`;
   }
   function tabInjuries(t) {
     const inj = t.injuries;
@@ -255,11 +277,17 @@
   }
   const state = {};
   async function tournamentPage(route) {
-    const t = await get(route.slug);
+    const sh = await get(`t/${route.slug}`);
+    let pers = null;
+    if (PROFILE?.tournaments[route.slug]) {
+      try { pers = await get(`p/${PROFILE.id}/${route.slug}`); } catch (e) { pers = null; }
+    }
+    const t = { ...sh, ...(pers || {}), photos: { ...(sh.photos || {}), ...(pers?.photos || {}) }, mainProfile: !!PROFILE?.main, hasSquad: !!pers };
     CUR = t;
     const st = (state[route.slug] = state[route.slug] || {});
     const s = t.squad || {};
-    const body = { scenarios: tabScenarios, squad: tabSquad, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
+    const personalTab = ["scenarios", "squad", "report"].includes(route.tab);
+    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { scenarios: tabScenarios, squad: tabSquad, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
     app.innerHTML = `<div class="t-head"><h1>${esc(t.name)}</h1><div class="t-facts">
         <div><span>Место</span><b>${int(s.place)} ${placeDiff(s.placeDiff)}</b></div><div><span>Очки</span><b>${int(s.score)}</b></div>
         <div><span>${esc(t.nextTour?.name || "Тур")}</span><b>${t.nextTour?.deadline ? cd(t.nextTour.deadline) : "—"}</b></div></div></div>
@@ -306,13 +334,14 @@
     const route = parse();
     try {
       const ov = await get("overview");
+      pickProfile(ov);
       renderNav(ov, route);
       foot.innerHTML = `Последнее обновление данных ${esc(dateTime(ov.builtAt))} МСК · время везде московское`;
       if (route.page === "t") await tournamentPage(route);
       else if (route.page === "data") dataPage(ov);
       else if (route.page === "rules") await rulesPage(route);
       else await home(ov);
-      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : route.page === "rules" ? "Правила — " : ""}Ducks`;
+      document.title = `${route.page === "t" ? (ov.tournaments.find((x) => x.slug === route.slug)?.name + " — ") : route.page === "data" ? "Данные — " : route.page === "rules" ? "Правила — " : ""}${ov.team || "AREAL FFC"}`;
     } catch (e) {
       app.innerHTML = `<div class="callout">Не удалось загрузить данные: ${esc(e.message)}. Обновите страницу через минуту — сайт мог как раз пересобираться.</div>`;
     }
