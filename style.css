@@ -75,14 +75,24 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 6
 .hero .meta b { color: var(--ink); font-weight: 600; }
 
 /* выбор профиля */
-.profile-pick { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.profile-pick select {
-  font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--paper);
-  border: 1px solid var(--line); border-radius: 999px; padding: 6px 30px 6px 12px; cursor: pointer;
-  appearance: none; -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+.profile-pick { margin-left: auto; position: relative; }
+#who-btn {
+  display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 3px 14px 3px 3px; cursor: pointer;
 }
+#who-btn::after { content: ""; width: 6px; height: 6px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-2px); margin-left: 2px; }
+.ava { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; display: inline-grid; place-items: center; background: var(--line); font-weight: 700; font-size: 13px; }
+.ava.lg { width: 40px; height: 40px; }
+#who-list {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; list-style: none; margin: 0; padding: 6px; min-width: 240px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(21, 32, 43, .16);
+  max-height: 70vh; overflow-y: auto;
+}
+#who-list li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-weight: 600; outline: none; }
+#who-list li small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+#who-list li:hover, #who-list li:focus-visible { background: var(--chalk); }
+#who-list li[aria-selected="true"] { background: var(--pitch-soft); }
+.who-head { display: flex; align-items: center; gap: 12px; }
 .profile-pick[hidden] { display: none; }
 .who-name { color: var(--pitch); }
 
@@ -272,7 +282,8 @@ section > h2 { margin-bottom: 14px; }
   .top { gap: 14px; }
   .brand small { display: none; }
   .top { flex-wrap: wrap; row-gap: 8px; }
-  .profile-pick span { display: none; }
+  #who-btn > span { display: none; }
+  #who-btn { padding-right: 12px; }
   .top nav { order: 3; width: 100%; }
   .stack thead { display: none; }
   .stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px; border-bottom: 1px solid var(--line); }

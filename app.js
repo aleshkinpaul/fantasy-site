@@ -11,7 +11,9 @@
   const app = document.getElementById("app");
   const nav = document.getElementById("nav");
   const foot = document.getElementById("foot");
-  const whoSel = document.getElementById("who");
+  const whoWrap = document.getElementById("who-wrap");
+  const whoBtn = document.getElementById("who-btn");
+  const whoList = document.getElementById("who-list");
 
   // ---------- профиль участника (выбор хранится в браузере) ----------
   const PKEY = "areal.profile";
@@ -20,15 +22,32 @@
     set(v) { try { localStorage.setItem(PKEY, v); } catch (e) { /* приватный режим — живём без памяти */ } },
   };
   let PROFILE = null; // объект профиля из overview.profiles
+  const ava = (p, cls = "ava") => (p?.avatar ? `<img class="${cls}" src="${esc(p.avatar)}" alt="">` : `<span class="${cls} ava-empty">${esc((p?.name || "?")[0])}</span>`);
   function pickProfile(ov) {
     const saved = store.get();
     PROFILE = ov.profiles.find((p) => p.id === saved) || ov.profiles.find((p) => p.main) || ov.profiles[0] || null;
-    if (ov.profiles.length > 1) {
-      whoSel.innerHTML = ov.profiles.map((p) => `<option value="${esc(p.id)}"${p === PROFILE ? " selected" : ""}>${esc(p.name)}</option>`).join("");
-      document.getElementById("who-wrap").hidden = false;
-    }
+    if (ov.profiles.length < 2) return;
+    whoWrap.hidden = false;
+    whoBtn.innerHTML = `${ava(PROFILE)}<span>${esc(PROFILE.name)}</span>`;
+    whoList.innerHTML = ov.profiles.map((p) => `<li role="option" tabindex="-1" data-id="${esc(p.id)}" aria-selected="${p === PROFILE}">${ava(p)}<span>${esc(p.name)}<small>${esc(Object.values(p.tournaments)[0]?.squad?.name || "")}</small></span></li>`).join("");
   }
-  whoSel.addEventListener("change", () => { store.set(whoSel.value); render(); });
+  const openList = (on) => {
+    whoList.hidden = !on; whoBtn.setAttribute("aria-expanded", String(on));
+    if (on) (whoList.querySelector('[aria-selected="true"]') || whoList.firstElementChild)?.focus();
+  };
+  whoBtn.addEventListener("click", () => openList(whoList.hidden));
+  whoList.addEventListener("click", (e) => {
+    const li = e.target.closest("li[data-id]"); if (!li) return;
+    store.set(li.dataset.id); openList(false); whoBtn.focus(); render();
+  });
+  whoList.addEventListener("keydown", (e) => {
+    const items = [...whoList.children]; const i = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); items[Math.min(i + 1, items.length - 1)].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); items[Math.max(i - 1, 0)].focus(); }
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); document.activeElement.click(); }
+    else if (e.key === "Escape") { openList(false); whoBtn.focus(); }
+  });
+  document.addEventListener("click", (e) => { if (!whoWrap.contains(e.target)) openList(false); });
   const mine = () => (PROFILE ? PROFILE.tournaments : {});
 
   // ---------- утилиты ----------
@@ -160,7 +179,7 @@
     }).join("");
     const stale = ov.sources.filter((s) => !s.ok);
     app.innerHTML = `${hero}${strip(ov)}
-      <section><h2>Команды · <span class="who-name">${esc(PROFILE?.name || "")}</span></h2>
+      <section><h2 class="who-head">${ava(PROFILE, "ava lg")}<span>Команды · <span class="who-name">${esc(PROFILE?.name || "")}</span></span></h2>
         <p class="lede">Место и очки — с sports.ru; совет — нормальный сценарий модели: капитан, трансферы и число пунктов, которые стоит перепроверить.</p>
         <div class="table-wrap"><table class="stack"><thead><tr><th>Турнир</th><th class="num">Место</th><th class="num">Очки</th><th>Следующий тур</th><th>Капитан по модели</th><th>Трансферы</th><th></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="7" class="empty">У профиля нет команд в наших турнирах.</td></tr>'}</tbody></table></div></section>
