@@ -100,7 +100,7 @@
 
   // ---------- навигация ----------
   function renderNav(ov, route) {
-    const items = [["#/", "Ареал", route.page === "areal"], ["#/me", "Мои команды", route.page === "home"]]
+    const items = [["#/", "AREAL", route.page === "areal"], ["#/me", "Мои команды", route.page === "home"]]
       .concat(ORDER.filter((s) => mine()[s]).map((s) => {
         const t = ov.tournaments.find((x) => x.slug === s);
         return [`#/t/${s}`, t ? t.short : s, route.slug === s];
@@ -249,6 +249,8 @@
         <h3 style="margin-bottom:8px">${esc(sc.title)} · ${esc(sc.formation)}</h3><p class="lede" style="margin:0 0 14px">${esc(sc.about || "")}</p>
         ${trs || '<p class="sub" style="margin-bottom:14px">Трансферов в этом сценарии нет.</p>'}
         ${plan ? `<h3 style="margin:16px 0 8px">План на следующие туры</h3>${plan}` : ""}
+        <h3 style="margin:18px 0 8px">Игроки: основа и скамейка</h3>
+        <div class="pl-cards">${(sc.xi || []).concat(sc.bench || []).map((p) => plCard({ ...p, name: p.name + (p.captain ? " (К)" : p.vice ? " (В)" : "") + (p.new ? " · новичок" : "") })).join("")}</div>
         <p class="sub" style="margin-top:10px">Бюджет после трансферов: ${num(sc.budget?.costAfter)} из ${num(sc.budget?.limit, 0)}, в банке ${num(sc.bankAfter)}.</p>
       </div></div>`;
   }
@@ -277,11 +279,12 @@
     if (!list) return `<p class="empty">Нет расчёта по текущему составу.</p>`;
     const rank = { ВР: 0, ЗЩ: 1, ПЗ: 2, НП: 3 };
     const all = list.slice().sort((a, b) => rank[a.pos] - rank[b.pos] || (b.xPts?.[0] ?? 0) - (a.xPts?.[0] ?? 0));
-    const cards = all.map((p) => `<div class="pl-card"><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span><b>${esc(p.name)}</b><span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн · старт ${pct(p.pStart)}</span></span>
-        <span class="pl-x"><b>${num(p.xPts?.[0])}</b><span class="sub">${num(p.xPts?.[1])} · ${num(p.xPts?.[2])}</span></span></div>${noteHtml(p.note)}</div>`).join("");
+    const cards = all.map(plCard).join("");
     return `<p class="lede">Все 15 игроков: на поле — ожидаемые очки на этот тур; ниже — коротко про каждого: какое он место среди всех игроков своей позиции в лиге, кто на позиции сильнейший, что за и что против. Справа в карточке — очки на этот и два следующих тура.</p>
       <div class="pitch-wrap">${pitch({ xi: all, formation: "2-5-5-3", full: true }, [])}<div class="pl-cards">${cards}</div></div>`;
   }
+  const plCard = (p) => `<div class="pl-card"><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span><b>${esc(p.name)}</b><span class="sub">${esc(p.pos)} · ${esc(p.team)} · ${num(p.price)} млн · старт ${pct(p.pStart)}</span></span>
+        <span class="pl-x"><b>${num(p.xPts?.[0])}</b><span class="sub">${num(p.xPts?.[1])} · ${num(p.xPts?.[2])}</span></span></div>${noteHtml(p.note)}</div>`;
   function tabIdeal(t) {
     const r = t.rec, idl = r?.ideal;
     if (!idl) return `<p class="empty">Сильнейший состав считается вместе с рекомендациями — пока его нет.</p>`;
