@@ -174,7 +174,7 @@
       return `<tr class="tourn-row">
         <td><a href="#/t/${t.slug}">${esc(t.name)}</a><span class="sub">${esc(t.squad.name || "")}</span></td>
         <td class="num place"><b>${int(t.squad.place)}</b><span class="sub">из ${int(t.squad.total)} ${placeDiff(t.squad.placeDiff)}</span></td>
-        <td class="num"><b>${int(t.squad.score)}</b><span class="sub">прошлый тур ${int(t.squad.lastTour)}</span></td>
+        <td class="num"><b>${int(t.squad.score)}</b><span class="sub">${esc(t.squad.lastTourName || "прошлый тур")}: ${int(t.squad.lastTour)}</span></td>
         <td>${esc(t.nextTour.name || "—")}<span class="sub">${esc(dateTime(t.nextTour.deadline))} · ${cd(t.nextTour.deadline)}</span></td>
         <td>${p.captain ? `<b>${esc(p.captain)}</b><span class="sub">вице ${esc(p.vice || "—")} · ${num(p.xiPoints)} xPts</span>` : '<span class="sub">нет расчёта</span>'}</td>
         <td>${tr || '<span class="sub">без трансферов</span>'}</td>
@@ -211,7 +211,7 @@
         <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b><span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
         <td class="rt"><div class="rt-bar"><i style="width:${((r.rating || 0) / best * 100).toFixed(1)}%"></i></div><b>${pc(r.rating)}</b></td>
         ${cells}
-        <td class="num"><b>${int(r.total)}</b><span class="sub">+${int(r.lastTour)} за тур</span></td>
+        <td class="num"><b>${int(r.total)}</b><span class="sub">${r.lastTour == null ? "за тур —" : "+" + int(r.lastTour) + " за тур"}</span></td>
         <td class="num"><span title="Средняя доля обойдённых соперников по всем лигам">${pc(r.byPlace)}</span><span class="sub">${r.rankByPlace}-е место</span></td>
       </tr>`;
     }).join("");
@@ -366,7 +366,7 @@
       ${L ? `<section><h2>Топ-100 в прошлом туре · ${esc(L.name)}</h2>
         <div class="stat-line"><div><span>Среднее</span><b>${num(L.mean)}</b></div><div><span>Медиана</span><b>${num(L.median)}</b></div>
           <div><span>Лучший</span><b>${int(L.max)}</b></div><div><span>Команд</span><b>${int(L.squads)}</b></div>
-          ${t.squad?.lastTour != null ? `<div><span>Мои очки</span><b class="${t.squad.lastTour >= (L.mean || 0) ? "up" : "down"}">${int(t.squad.lastTour)}</b></div>` : ""}</div>
+          ${t.squad?.byTour?.[L.name] != null ? `<div><span>Мои очки</span><b class="${t.squad.byTour[L.name] >= (L.mean || 0) ? "up" : "down"}">${int(t.squad.byTour[L.name])}</b></div>` : ""}</div>
         <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:10px">Капитаны</h3>${bars(L.captains || [], "pct", "c")}
             ${(L.bought || []).length ? `<h3 style="margin:22px 0 10px">Покупали чаще всего</h3>${bars(L.bought, "pct")}` : ""}</section>
           <section style="margin-top:0"><h3 style="margin-bottom:10px">Владение</h3>${bars(L.own || [], "pct")}</section></div>
