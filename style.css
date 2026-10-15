@@ -339,7 +339,7 @@ section > h2 { margin-bottom: 14px; }
 }
 
 /* позиции: пастельные квадратики */
-.pos { display: inline-block; min-width: 26px; padding: 1px 5px; border-radius: 5px; font-size: 11px; font-weight: 700;
+.pos { display: inline-block; width: 30px; padding: 1px 0; border-radius: 5px; font-size: 11px; font-weight: 700;
   line-height: 16px; text-align: center; letter-spacing: .02em; vertical-align: 1px; }
 .pos-gk { background: var(--gk-bg); color: var(--gk-ink); }
 .pos-df { background: var(--df-bg); color: var(--df-ink); }
@@ -402,3 +402,6 @@ button.link { font: inherit; font-size: 13px; background: none; border: 0; paddi
 .who-cell > .pos { flex: none; }
 td.score b { display: block; font-size: 15px; }
 td.score .sub { font-size: 11.5px; }
+.bar .who-cell { min-width: 0; }
+.bar .who-cell .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .who-cell .pr { margin-left: auto; color: var(--muted); font-size: 12.5px; padding-left: 8px; }

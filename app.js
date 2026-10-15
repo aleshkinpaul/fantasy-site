@@ -445,7 +445,7 @@
   const who = (x) => {
     const m = String(x.player || "").match(/^(.*) \(([^,]+), ([^,]+), ([^)]+)\)$/);
     if (!m) return `${crest(x.player, "face sm crest-only")}<span>${esc(x.player)}</span>`;
-    return `${posb(m[3])}${face(x.id, "face sm") || crest(m[2], "face sm crest-only")}${crest(m[2], "crest xs")}<span>${esc(m[1])} <span class="sub" style="display:inline">${esc(m[4])}</span></span>`;
+    return `${posb(m[3])}${face(x.id, "face sm") || crest(m[2], "face sm crest-only")}${crest(m[2], "crest xs")}<span class="nm">${esc(m[1])}</span><span class="pr">${esc(m[4])}</span>`;
   };
   const bars = (list, f, cls = "") => `<div class="bars">${list.map((x) => `<div class="bar"><span class="who-cell">${who(x)}</span><span class="fill"><i class="${cls}" style="width:${Math.min(100, x[f] || 0)}%"></i></span><span class="num">${num(x[f], 0)}%</span></div>`).join("")}</div>`;
   function tabTop(t) {
