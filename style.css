@@ -399,3 +399,4 @@ button.link { font: inherit; font-size: 13px; background: none; border: 0; paddi
 .tr-top td { padding-top: 6px; padding-bottom: 6px; vertical-align: middle; }
 .tr-top .who-cell { gap: 6px; }
 .tr-top .crest { margin-right: 0; }
+.who-cell > .pos { flex: none; }

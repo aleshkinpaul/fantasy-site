@@ -286,7 +286,7 @@
     return `<p class="lede">Все 15 игроков: на поле — ожидаемые очки на этот тур; ниже — коротко про каждого: какое он место среди всех игроков своей позиции в лиге, кто на позиции сильнейший, что за и что против. Справа в карточке — очки на этот и два следующих тура.</p>
       <div class="pitch-wrap">${pitch({ xi: all, formation: "2-5-5-3", full: true }, [])}<div class="pl-cards">${cards}</div></div>`;
   }
-  const plCard = (p) => `<div class="pl-card"><div class="who-cell">${face(p.id) || crest(p.team, "face crest-only")}<span><b>${esc(p.name)}</b><span class="sub">${posb(p.pos)} ${crest(p.team, "crest xs")}${num(p.price)} млн · старт ${pct(p.pStart)}</span></span>
+  const plCard = (p) => `<div class="pl-card"><div class="who-cell">${posb(p.pos)}${face(p.id) || crest(p.team, "face crest-only")}<span><b>${esc(p.name)}</b><span class="sub">${crest(p.team, "crest xs")}${num(p.price)} млн · старт ${pct(p.pStart)}</span></span>
         <span class="pl-x"><b>${num(p.xPts?.[0])}</b><span class="sub">${num(p.xPts?.[1])} · ${num(p.xPts?.[2])}</span></span></div>${noteHtml(p.note)}</div>`;
   function tabIdeal(t) {
     const r = t.rec, idl = r?.ideal;
@@ -320,7 +320,7 @@
   ];
   const PAGE = 50;
   const dsel = (d) => (d == null ? "—" : Math.abs(d) < 0.05 ? '<span class="sub">0</span>' : `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${num(Math.abs(d))}</span>`);
-  const pname = (p) => `<span class="who-cell">${face(p.id, "face sm") || crest(p.team, "face sm crest-only")}${crest(p.team, "crest xs")}<span><b>${esc(p.name)}</b> ${posb(p.pos)}</span></span>`;
+  const pname = (p) => `<span class="who-cell">${posb(p.pos)}${face(p.id, "face sm") || crest(p.team, "face sm crest-only")}${crest(p.team, "crest xs")}<span><b>${esc(p.name)}</b></span></span>`;
   function transfersBlock(t, k = 15) {
     const T = t.transfers;
     if (!T) return `<p class="empty">Данных о трансферах к туру пока нет — они собираются при выгрузках перед дедлайном.</p>`;
@@ -443,7 +443,7 @@
   const who = (x) => {
     const m = String(x.player || "").match(/^(.*) \(([^,]+), ([^,]+), ([^)]+)\)$/);
     if (!m) return `${crest(x.player, "face sm crest-only")}<span>${esc(x.player)}</span>`;
-    return `${face(x.id, "face sm") || crest(m[2], "face sm crest-only")}${crest(m[2], "crest xs")}<span>${esc(m[1])} ${posb(m[3])} <span class="sub" style="display:inline">${esc(m[4])}</span></span>`;
+    return `${posb(m[3])}${face(x.id, "face sm") || crest(m[2], "face sm crest-only")}${crest(m[2], "crest xs")}<span>${esc(m[1])} <span class="sub" style="display:inline">${esc(m[4])}</span></span>`;
   };
   const bars = (list, f, cls = "") => `<div class="bars">${list.map((x) => `<div class="bar"><span class="who-cell">${who(x)}</span><span class="fill"><i class="${cls}" style="width:${Math.min(100, x[f] || 0)}%"></i></span><span class="num">${num(x[f], 0)}%</span></div>`).join("")}</div>`;
   function tabTop(t) {
