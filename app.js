@@ -339,9 +339,10 @@
     if (!S) return `<p class="empty">Сводки пока нет.</p>`;
     const n = t.rec?.scenarios?.normal;
     const plan = n ? `<div class="callout" style="border-left-color:var(--pitch)">Модель советует: капитан <b>${esc(n.captain)}</b>, вице ${esc(n.vice)}; ${(n.transfers || []).length ? "трансферы " + n.transfers.map((x) => `<span class="tr-out">${esc(lastName(x.out?.name))}</span> → <b>${esc(lastName(x.in?.name))}</b>`).join(", ") : "без трансферов"} · ${num(n.xiPoints)} xPts. <a href="#/t/${esc(t.slug)}/scenarios">Сценарии</a></div>` : "";
-    const ms = (S.matches || []).map((m) => `<tr><td class="num">${esc(fmt(m.date, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</td>
-        <td><span class="team-name">${crest(m.home)}${esc(m.home)}</span> — <span class="team-name">${crest(m.away)}${esc(m.away)}</span>${m.moved ? ` <span class="pill warn" title="перенесённый матч">из ${esc(m.moved)}</span>` : ""}</td>
-        <td class="num">${m.xf == null ? "—" : `${num(m.xf, 1)} : ${num(m.xa, 1)}`}</td></tr>`).join("");
+    const mrows = (list) => (list || []).map((m) => `<tr><td class="num">${esc(fmt(m.date, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</td>
+        <td><span class="team-name">${crest(m.home)}${esc(m.home)}</span> — <span class="team-name">${crest(m.away)}${esc(m.away)}</span>${m.moved ? ` <span class="pill warn" title="перенесённый матч">из ${esc(m.moved)}</span>` : ""}${m.score && m.status !== "CLOSED" ? ' <span class="pill bad">идёт</span>' : ""}</td>
+        <td class="num score">${m.score ? `<b>${int(m.score[0])} : ${int(m.score[1])}</b>${m.xf == null ? "" : `<span class="sub">xG ${num(m.xf)} : ${num(m.xa)}</span>`}` : m.xf == null ? "—" : `${num(m.xf)} : ${num(m.xa)}`}</td></tr>`).join("");
+    const ms = mrows(S.matches);
     const best = ["ВР", "ЗЩ", "ПЗ", "НП"].filter((k) => S.bestByPos?.[k]).map((k) => { const p = { ...S.bestByPos[k], pos: k }; return `<tr><td>${pname(p)}</td><td class="num"><b>${num(p.x)}</b></td></tr>`; }).join("");
     const T = t.transfers;
     const mini = (rows) => (rows || []).slice(0, 5).map((p) => `<tr><td>${pname(p)}</td><td class="num">${dsel(p.dsel)}</td></tr>`).join("");
@@ -355,7 +356,8 @@
       ${plan}
       ${S.double?.length || S.blank?.length || S.pending?.length ? `<div class="callout">${S.double?.length ? `Спарка (2 матча): <b>${S.double.map(esc).join(", ")}</b>. ` : ""}${S.blank?.length ? `Не играют: <b>${S.blank.map(esc).join(", ")}</b>. ` : ""}${S.pending?.length ? `Перенесены без даты: ${S.pending.map(esc).join("; ")}.` : ""}</div>` : ""}
       <div class="split">
-        <section style="margin-top:0"><h2>Матчи тура</h2><p class="sub" style="margin-bottom:8px">Справа — ожидаемые голы хозяев и гостей.</p><div class="table-wrap"><table><tbody>${ms || '<tr><td class="empty">Матчей нет</td></tr>'}</tbody></table></div></section>
+        <section style="margin-top:0"><h2>Матчи · ${esc(S.tour || "")}</h2><p class="sub" style="margin-bottom:8px">Справа — счёт, если матч сыгран; под ним — прогноз модели (ожидаемые голы хозяев и гостей до матча).</p><div class="table-wrap"><table><tbody>${ms || '<tr><td class="empty">Матчей нет</td></tr>'}</tbody></table></div>
+          ${S.live?.matches?.length ? `<h2 style="margin-top:24px">${S.live.inProgress ? "Идёт" : "Прошлый тур"} · ${esc(S.live.tour)}</h2><p class="sub" style="margin-bottom:8px">Счёт и прогноз модели до матча.</p><div class="table-wrap"><table><tbody>${mrows(S.live.matches)}</tbody></table></div>` : ""}</section>
         <section style="margin-top:0"><h2>Лучшие по позициям</h2><p class="sub" style="margin-bottom:8px">Максимум ожидаемых очков на тур. <a href="#/t/${esc(t.slug)}/players">Все игроки</a></p>
           <div class="table-wrap"><table><tbody>${best}</tbody></table></div>
           ${T ? `<h2 style="margin-top:24px">Трансферы к туру</h2><p class="sub" style="margin-bottom:8px">Изменение популярности с ${esc(T.since || "прошлого тура")}, п.п.</p>
