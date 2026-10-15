@@ -4,7 +4,7 @@
   const TZ = "Europe/Moscow";
   const ORDER = ["russia", "england", "spain", "champions-league"];
   const TABS = [
-    ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
+    ["summary", "Сводка"], ["players", "Игроки"], ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
     ["top", "Топ-100"], ["injuries", "Травмы"], ["report", "Отчёт"],
   ];
   const cache = {};
@@ -113,7 +113,7 @@
   }
   function parse() {
     const p = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
-    if (p[0] === "t" && ORDER.includes(p[1])) return { page: "t", slug: p[1], tab: TABS.some(([k]) => k === p[2]) ? p[2] : "scenarios" };
+    if (p[0] === "t" && ORDER.includes(p[1])) return { page: "t", slug: p[1], tab: TABS.some(([k]) => k === p[2]) ? p[2] : "summary" };
     if (p[0] === "data") return { page: "data" };
     if (p[0] === "me") return { page: "home" };
     if (p[0] === "rules") return { page: "rules", tab: p[1] === "method" ? "method" : "rules" };
@@ -297,8 +297,8 @@
         <div><span>Стоимость</span><b>${num(idl.cost)}</b></div></div>
       <p class="lede">Лучший состав на этот тур из всех игроков лиги — только с базовыми правилами: 15 игроков 2/5/5/3, бюджет ${num(idl.budget, 0)}, не больше 3 из клуба. Сила — ожидаемые очки нормального сценария (основа с капитаном) против этого состава.</p>
       <div class="pitch-wrap">${pitch(idl)}<div><h3 style="margin-bottom:8px">${esc(idl.formation)} · капитан ${esc(idl.captain)}, вице ${esc(idl.vice)}</h3>
-        <p class="sub">Игроки отбираются только из тех, у кого в туре есть матч и кто регулярно играет (фильтр минут).</p></div></div>
-      ${playersSection(t)}`;
+        <p class="sub">Игроки отбираются только из тех, у кого в туре есть матч и кто регулярно играет (фильтр минут).</p>
+        <p class="sub" style="margin-top:8px">Все игроки лиги с ожидаемыми очками — на вкладке <a href="#/t/${esc(t.slug)}/players">Игроки</a>.</p></div></div>`;
   }
   const COMP = [["minutes", "Мин", "минуты на поле"], ["goals", "Голы", "голы"], ["assists", "Асс", "голевые передачи"],
     ["fantasyAssists", "Ф-асс", "фэнтези-ассисты"], ["cleanSheet", "Сух", "сухой матч"], ["conceded", "Пропущ", "пропущенные (−1 за 2)"],
@@ -310,6 +310,7 @@
     ["x0", "xPts", "ожидаемые очки на тур", (p) => p.x?.[0] ?? 0, true],
     ["fo", "ФО", "фэнтези-очки за сезон (sports.ru)", (p) => p.fo ?? -1, true], ["avg", "Ср.", "среднее за матч (sports.ru)", (p) => p.avg ?? -1, true],
     ["form", "Форма", "форма (sports.ru)", (p) => p.form ?? -1, true], ["sel", "Попул.", "популярность: % всех команд sports.ru", (p) => p.sel ?? -1, true],
+    ["dsel", "Δ", "изменение популярности с прошлого тура, п.п. (чистые трансферы)", (p) => p.dsel ?? 0, true],
     ["opp", "Соперник", "число матчей в туре", (p) => (p.m || []).length, true],
     ["st", "Старт", "вероятность выйти в старте", (p) => p.st ?? 0, true], ["app", "Выход", "вероятность выйти на поле", (p) => p.app ?? 0, true],
     ["min", "~мин", "ожидаемые минуты", (p) => p.min ?? 0, true],
@@ -318,6 +319,50 @@
     ["own", "Топ-100", "владение в топ-100 общего зачёта", (p) => p.own ?? 0, true],
   ];
   const PAGE = 50;
+  const dsel = (d) => (d == null ? "—" : Math.abs(d) < 0.05 ? '<span class="sub">0</span>' : `<span class="${d > 0 ? "up" : "down"}">${d > 0 ? "+" : "−"}${num(Math.abs(d))}</span>`);
+  const pname = (p) => `<span class="who-cell">${face(p.id, "face sm") || crest(p.team, "face sm crest-only")}${crest(p.team, "crest xs")}<span><b>${esc(p.name)}</b> ${posb(p.pos)}</span></span>`;
+  function transfersBlock(t, k = 15) {
+    const T = t.transfers;
+    if (!T) return `<p class="empty">Данных о трансферах к туру пока нет — они собираются при выгрузках перед дедлайном.</p>`;
+    const top = new Set(T.sportsTop || []);
+    const list = (rows) => `<table class="tr-top"><thead><tr><th>Игрок</th><th class="num">Цена</th><th class="num">Попул.</th><th class="num">Δ, п.п.</th></tr></thead><tbody>${rows.slice(0, k).map((p) => `<tr><td>${pname(p)}${top.has(p.id) ? ' <span class="pill ok" title="в топ-3 трансферов тура на sports.ru">топ sports.ru</span>' : ""}</td>
+        <td class="num">${num(p.price)}</td><td class="num">${num(p.sel)}%</td><td class="num"><b>${dsel(p.dsel)}</b></td></tr>`).join("") || '<tr><td class="empty">Нет</td></tr>'}</tbody></table>`;
+    return `<p class="lede">Как изменилась популярность (доля всех ~${int(t.summary?.squads)} команд турнира) с ${esc(T.since || "прошлого тура")} — это чистые трансферы: покупки минус продажи. Данные на ${esc(dateTime(T.at))} МСК.</p>
+      <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:8px">Покупают</h3><div class="table-wrap">${list(T.buys)}</div></section>
+        <section style="margin-top:0"><h3 style="margin-bottom:8px">Продают</h3><div class="table-wrap">${list(T.sells)}</div></section></div>`;
+  }
+  function tabPlayers(t) {
+    return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
+  }
+  function tabSummary(t) {
+    const S = t.summary;
+    if (!S) return `<p class="empty">Сводки пока нет.</p>`;
+    const n = t.rec?.scenarios?.normal;
+    const plan = n ? `<div class="callout" style="border-left-color:var(--pitch)">Модель советует: капитан <b>${esc(n.captain)}</b>, вице ${esc(n.vice)}; ${(n.transfers || []).length ? "трансферы " + n.transfers.map((x) => `<span class="tr-out">${esc(lastName(x.out?.name))}</span> → <b>${esc(lastName(x.in?.name))}</b>`).join(", ") : "без трансферов"} · ${num(n.xiPoints)} xPts. <a href="#/t/${esc(t.slug)}/scenarios">Сценарии</a></div>` : "";
+    const ms = (S.matches || []).map((m) => `<tr><td class="num">${esc(fmt(m.date, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))}</td>
+        <td><span class="team-name">${crest(m.home)}${esc(m.home)}</span> — <span class="team-name">${crest(m.away)}${esc(m.away)}</span>${m.moved ? ` <span class="pill warn" title="перенесённый матч">из ${esc(m.moved)}</span>` : ""}</td>
+        <td class="num">${m.xf == null ? "—" : `${num(m.xf, 1)} : ${num(m.xa, 1)}`}</td></tr>`).join("");
+    const best = ["ВР", "ЗЩ", "ПЗ", "НП"].filter((k) => S.bestByPos?.[k]).map((k) => { const p = { ...S.bestByPos[k], pos: k }; return `<tr><td>${pname(p)}</td><td class="num"><b>${num(p.x)}</b></td></tr>`; }).join("");
+    const T = t.transfers;
+    const mini = (rows) => (rows || []).slice(0, 5).map((p) => `<tr><td>${pname(p)}</td><td class="num">${dsel(p.dsel)}</td></tr>`).join("");
+    const L = S.lastTop;
+    return `<div class="stat-line">
+        <div><span>Тур</span><b>${esc(S.tour || "—")}</b></div>
+        <div><span>Дедлайн, МСК</span><b>${esc(dateTime(S.deadline))}</b><span class="sub">${cd(S.deadline)}</span></div>
+        <div><span>Трансферов</span><b>${int(S.transfers)}</b></div><div><span>Из одного клуба</span><b>до ${int(S.maxClub)}</b></div>
+        <div><span>Матчей</span><b>${(S.matches || []).length}</b></div><div><span>Команд в турнире</span><b>${int(S.squads)}</b></div>
+        <div><span>${esc(S.nextTour || "Следующий тур")}</span><b>${esc(dateTime(S.nextDeadline))}</b></div></div>
+      ${plan}
+      ${S.double?.length || S.blank?.length || S.pending?.length ? `<div class="callout">${S.double?.length ? `Спарка (2 матча): <b>${S.double.map(esc).join(", ")}</b>. ` : ""}${S.blank?.length ? `Не играют: <b>${S.blank.map(esc).join(", ")}</b>. ` : ""}${S.pending?.length ? `Перенесены без даты: ${S.pending.map(esc).join("; ")}.` : ""}</div>` : ""}
+      <div class="split">
+        <section style="margin-top:0"><h2>Матчи тура</h2><p class="sub" style="margin-bottom:8px">Справа — ожидаемые голы хозяев и гостей.</p><div class="table-wrap"><table><tbody>${ms || '<tr><td class="empty">Матчей нет</td></tr>'}</tbody></table></div></section>
+        <section style="margin-top:0"><h2>Лучшие по позициям</h2><p class="sub" style="margin-bottom:8px">Максимум ожидаемых очков на тур. <a href="#/t/${esc(t.slug)}/players">Все игроки</a></p>
+          <div class="table-wrap"><table><tbody>${best}</tbody></table></div>
+          ${T ? `<h2 style="margin-top:24px">Трансферы к туру</h2><p class="sub" style="margin-bottom:8px">Изменение популярности с ${esc(T.since || "прошлого тура")}, п.п.</p>
+          <div class="split" style="gap:12px"><div class="table-wrap"><table><tbody>${mini(T.buys)}</tbody></table></div><div class="table-wrap"><table><tbody>${mini(T.sells)}</tbody></table></div></div>` : ""}
+          ${L ? `<h2 style="margin-top:24px">Топ-100 в прошлом туре</h2><p class="sub">${esc(L.name)}: в среднем ${num(L.mean)}, максимум ${int(L.max)}. Капитаны: ${(L.captains || []).map((c) => `${esc(String(c.player).split(" (")[0])} ${num(c.pct, 0)}%`).join(", ")}.</p>` : ""}
+        </section></div>`;
+  }
   function playersSection(t) {
     const P = t.players;
     if (!P?.list?.length) return "";
@@ -360,7 +405,7 @@
       return `<tr class="${p.mine ? "mine" : ""}${p.ok ? "" : " dim"}"><td class="num">${p.rank}</td><td class="num">${posb(p.pos)} ${p.posRank}</td>
         <td><div class="who-cell">${face(p.id, "face sm") || crest(p.team, "face sm crest-only")}${crest(p.team, "crest xs")}<span><b>${esc(p.name)}</b>${p.mine ? ' <span class="pill ok">мой</span>' : ""}${flag}</span></div></td>
         <td class="num">${num(p.price)}</td><td class="num"><b>${num(p.x?.[0])}</b>${p.sd != null ? `<span class="sub">± ${num(p.sd)}</span>` : ""}</td>
-        <td class="num">${int(p.fo)}</td><td class="num">${num(p.avg)}</td><td class="num">${int(p.form)}</td><td class="num">${p.sel == null ? "—" : num(p.sel) + "%"}</td>
+        <td class="num">${int(p.fo)}</td><td class="num">${num(p.avg)}</td><td class="num">${int(p.form)}</td><td class="num">${p.sel == null ? "—" : num(p.sel) + "%"}</td><td class="num">${dsel(p.dsel)}</td>
         <td class="opp">${opp}</td><td class="num">${pct(p.st)}</td><td class="num">${pct(p.app)}</td><td class="num">${int(p.min)}</td>
         ${COMP.map(([k]) => `<td class="num c-cell">${p.c?.[k] ? num(p.c[k]) : '<span class="sub">·</span>'}</td>`).join("")}
         <td class="num">${num(p.x?.[1])}</td><td class="num">${num(p.x?.[2])}</td><td class="num">${num(p.own)}%</td></tr>`;
@@ -438,7 +483,7 @@
     const st = (state[route.slug] = state[route.slug] || {});
     const s = t.squad || {};
     const personalTab = ["scenarios", "squad", "ideal", "report"].includes(route.tab);
-    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { scenarios: tabScenarios, squad: tabSquad, ideal: tabIdeal, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
+    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { summary: tabSummary, players: tabPlayers, scenarios: tabScenarios, squad: tabSquad, ideal: tabIdeal, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
     app.innerHTML = `<div class="t-head"><h1>${esc(t.name)}</h1><div class="t-facts">
         <div><span>Место</span><b>${int(s.place)} ${placeDiff(s.placeDiff)}</b></div><div><span>Очки</span><b>${int(s.score)}</b></div>
         <div><span>${esc(t.nextTour?.name || "Тур")}</span><b>${t.nextTour?.deadline ? cd(t.nextTour.deadline) : "—"}</b></div></div></div>
@@ -446,7 +491,7 @@
       <div id="tab">${body}</div>`;
     app.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { st.sc = b.dataset.sc; tournamentPage(route); }));
     app.querySelectorAll("[data-fx]").forEach((b) => b.addEventListener("click", () => { st.fx = b.dataset.fx; tournamentPage(route); }));
-    if (route.tab === "ideal" && t.players?.list?.length) {
+    if (route.tab === "players" && t.players?.list?.length) {
       st.pos = st.pos || new Set();
       fillPlayers(t, st);
       app.querySelectorAll(".pos-filter [data-pos]").forEach((b) => b.addEventListener("click", () => {

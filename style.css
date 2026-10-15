@@ -395,3 +395,7 @@ section > h2 { margin-bottom: 14px; }
 button.link { font: inherit; font-size: 13px; background: none; border: 0; padding: 4px 6px; color: var(--pitch); cursor: pointer; text-decoration: underline; }
 /* аватар в шапке — в кружке */
 #who-btn img.ava { border-radius: 50%; object-fit: cover; background: var(--line); }
+
+.tr-top td { padding-top: 6px; padding-bottom: 6px; vertical-align: middle; }
+.tr-top .who-cell { gap: 6px; }
+.tr-top .crest { margin-right: 0; }
