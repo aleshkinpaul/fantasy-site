@@ -356,8 +356,11 @@
       ${plan}
       ${S.double?.length || S.blank?.length || S.pending?.length ? `<div class="callout">${S.double?.length ? `Спарка (2 матча): <b>${S.double.map(esc).join(", ")}</b>. ` : ""}${S.blank?.length ? `Не играют: <b>${S.blank.map(esc).join(", ")}</b>. ` : ""}${S.pending?.length ? `Перенесены без даты: ${S.pending.map(esc).join("; ")}.` : ""}</div>` : ""}
       <div class="split">
-        <section style="margin-top:0"><h2>Матчи · ${esc(S.tour || "")}</h2><p class="sub" style="margin-bottom:8px">Справа — счёт, если матч сыгран; под ним — прогноз модели (ожидаемые голы хозяев и гостей до матча).</p><div class="table-wrap"><table><tbody>${ms || '<tr><td class="empty">Матчей нет</td></tr>'}</tbody></table></div>
-          ${S.live?.matches?.length ? `<h2 style="margin-top:24px">${S.live.inProgress ? "Идёт" : "Прошлый тур"} · ${esc(S.live.tour)}</h2><p class="sub" style="margin-bottom:8px">Счёт и прогноз модели до матча.</p><div class="table-wrap"><table><tbody>${mrows(S.live.matches)}</tbody></table></div>` : ""}</section>
+        <section style="margin-top:0"><h2>Матчи</h2>
+          <div class="seg mt-tabs" role="tablist">${S.live?.matches?.length ? `<button data-mt="live" aria-pressed="${S.live.inProgress}">${esc(S.live.tour)}${S.live.inProgress ? " · идёт" : " · прошлый"}</button>` : ""}<button data-mt="next" aria-pressed="${!S.live?.inProgress}">${esc(S.tour || "")} · ${S.live?.inProgress ? "следующий" : "текущий"}</button></div>
+          <p class="sub" style="margin-bottom:8px">Справа — счёт, если матч сыгран; под ним — прогноз модели до матча (ожидаемые голы хозяев и гостей).</p>
+          <div class="table-wrap" data-mtp="next"${S.live?.inProgress ? " hidden" : ""}><table><tbody>${ms || '<tr><td class="empty">Матчей нет</td></tr>'}</tbody></table></div>
+          ${S.live?.matches?.length ? `<div class="table-wrap" data-mtp="live"${S.live.inProgress ? "" : " hidden"}><table><tbody>${mrows(S.live.matches)}</tbody></table></div>` : ""}</section>
         <section style="margin-top:0"><h2>Лучшие по позициям</h2><p class="sub" style="margin-bottom:8px">Максимум ожидаемых очков на тур. <a href="#/t/${esc(t.slug)}/players">Все игроки</a></p>
           <div class="table-wrap"><table><tbody>${best}</tbody></table></div>
           ${T ? `<h2 style="margin-top:24px">Трансферы к туру</h2><p class="sub" style="margin-bottom:8px">Изменение популярности с ${esc(T.since || "прошлого тура")}, п.п.</p>
@@ -500,6 +503,10 @@
       <div id="tab">${body}</div>`;
     app.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { st.sc = b.dataset.sc; tournamentPage(route); }));
     app.querySelectorAll("[data-fx]").forEach((b) => b.addEventListener("click", () => { st.fx = b.dataset.fx; tournamentPage(route); }));
+    app.querySelectorAll("[data-mt]").forEach((b) => b.addEventListener("click", () => {
+      app.querySelectorAll("[data-mt]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      app.querySelectorAll("[data-mtp]").forEach((x) => { x.hidden = x.dataset.mtp !== b.dataset.mt; });
+    }));
     if (route.tab === "players" && t.players?.list?.length) {
       st.pos = st.pos || new Set();
       fillPlayers(t, st);
