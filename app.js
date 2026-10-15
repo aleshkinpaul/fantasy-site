@@ -260,7 +260,7 @@
   function tabScenarios(t, state) {
     const r = t.rec;
     if (!r || !r.scenarios) return `<p class="empty">Рекомендаций пока нет — они считаются за сутки, за 3 часа и за час до дедлайна.</p>`;
-    const keys = ["safe", "normal", "risky"].filter((k) => r.scenarios[k]);
+    const keys = ["safe", "normal", "risky", "extreme"].filter((k) => r.scenarios[k]);
     const sel = state.sc && r.scenarios[state.sc] ? state.sc : "normal";
     const cols = keys.map((k) => {
       const s = r.scenarios[k];
