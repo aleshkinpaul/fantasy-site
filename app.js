@@ -259,7 +259,7 @@
   }
   function tabScenarios(t, state) {
     const r = t.rec;
-    if (!r || !r.scenarios) return `<p class="empty">Рекомендаций пока нет — они считаются за сутки и за 3 часа до дедлайна.</p>`;
+    if (!r || !r.scenarios) return `<p class="empty">Рекомендаций пока нет — они считаются за сутки, за 3 часа и за час до дедлайна.</p>`;
     const keys = ["safe", "normal", "risky"].filter((k) => r.scenarios[k]);
     const sel = state.sc && r.scenarios[state.sc] ? state.sc : "normal";
     const cols = keys.map((k) => {
@@ -360,8 +360,15 @@
           <div class="table-wrap"><table><tbody>${best}</tbody></table></div>
           ${T ? `<h2 style="margin-top:24px">Трансферы к туру</h2><p class="sub" style="margin-bottom:8px">Изменение популярности с ${esc(T.since || "прошлого тура")}, п.п.</p>
           <div class="split" style="gap:12px"><div class="table-wrap"><table><tbody>${mini(T.buys)}</tbody></table></div><div class="table-wrap"><table><tbody>${mini(T.sells)}</tbody></table></div></div>` : ""}
-          ${L ? `<h2 style="margin-top:24px">Топ-100 в прошлом туре</h2><p class="sub">${esc(L.name)}: в среднем ${num(L.mean)}, максимум ${int(L.max)}. Капитаны: ${(L.captains || []).map((c) => `${esc(String(c.player).split(" (")[0])} ${num(c.pct, 0)}%`).join(", ")}.</p>` : ""}
-        </section></div>`;
+        </section></div>
+      ${L ? `<section><h2>Топ-100 в прошлом туре · ${esc(L.name)}</h2>
+        <div class="stat-line"><div><span>Среднее</span><b>${num(L.mean)}</b></div><div><span>Медиана</span><b>${num(L.median)}</b></div>
+          <div><span>Лучший</span><b>${int(L.max)}</b></div><div><span>Команд</span><b>${int(L.squads)}</b></div>
+          ${t.squad?.lastTour != null ? `<div><span>Мои очки</span><b class="${t.squad.lastTour >= (L.mean || 0) ? "up" : "down"}">${int(t.squad.lastTour)}</b></div>` : ""}</div>
+        <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:10px">Капитаны</h3>${bars(L.captains || [], "pct", "c")}
+            ${(L.bought || []).length ? `<h3 style="margin:22px 0 10px">Покупали чаще всего</h3>${bars(L.bought, "pct")}` : ""}</section>
+          <section style="margin-top:0"><h3 style="margin-bottom:10px">Владение</h3>${bars(L.own || [], "pct")}</section></div>
+        <p class="sub" style="margin-top:10px"><a href="#/t/${esc(t.slug)}/top">Подробнее о топ-100</a></p></section>` : ""}`;
   }
   function playersSection(t) {
     const P = t.players;
@@ -553,7 +560,7 @@
       <p class="lede">Зелёный — свежие данные, жёлтый — старше двух суток (для статистики это нормально между турами), красный — ошибка последней выгрузки.</p>
       <div class="table-wrap"><table><thead><tr><th>Источник</th><th class="num">Обновлено</th><th class="num">Когда, МСК</th></tr></thead><tbody>${src}</tbody></table></div>
       <section><h2>Расписание обновлений</h2>
-        <p class="lede">Планировщик проверяет календарь каждый час: за сутки и за 3 часа до дедлайна — коэффициенты, составы, травмы и пересчёт рекомендаций; через час после дедлайна — составы топ-100; утром после тура — статистика матчей; после заморозки очков — итоговые очки топ-100.</p>
+        <p class="lede">Планировщик проверяет календарь каждый час: за сутки, за 3 часа и за час до дедлайна — данные sports.ru, коэффициенты, составы, травмы и пересчёт рекомендаций; через час после дедлайна — составы топ-100; утром после тура — статистика матчей; после заморозки очков — итоговые очки топ-100.</p>
         <div class="ev-list">${evs || '<p class="empty">Событий в ближайшие дни нет.</p>'}</div></section>`;
   }
 
