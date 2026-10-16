@@ -314,6 +314,9 @@
     ["opp", "Соперник", "число матчей в туре", (p) => (p.m || []).length, true],
     ["st", "Старт", "вероятность выйти в старте", (p) => p.st ?? 0, true], ["app", "Выход", "вероятность выйти на поле", (p) => p.app ?? 0, true],
     ["min", "~мин", "ожидаемые минуты", (p) => p.min ?? 0, true],
+    ["xg", "xG", "ожидаемые голы за сезон (FotMob, все турниры)", (p) => p.xg ?? -1, true],
+    ["xa", "xA", "ожидаемые ассисты за сезон (FotMob, все турниры)", (p) => p.xa ?? -1, true],
+    ["xgxa", "xG+xA", "сумма за сезон (FotMob, все турниры)", (p) => (p.xg == null ? -1 : p.xg + p.xa), true],
     ...COMP.map(([k, l, tip]) => [`c.${k}`, l, tip, (p) => p.c?.[k] ?? 0, k !== "conceded" && k !== "cards"]),
     ["x1", "N+1", "ожидаемые очки на следующий тур", (p) => p.x?.[1] ?? 0, true], ["x2", "N+2", "через тур", (p) => p.x?.[2] ?? 0, true],
     ["own", "Топ-100", "владение в топ-100 общего зачёта", (p) => p.own ?? 0, true],
@@ -331,8 +334,18 @@
       <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:8px">Покупают</h3><div class="table-wrap">${list(T.buys)}</div></section>
         <section style="margin-top:0"><h3 style="margin-bottom:8px">Продают</h3><div class="table-wrap">${list(T.sells)}</div></section></div>`;
   }
+  function xgxBlock(t) {
+    const X = t.xgx;
+    if (!X || (!X.under?.length && !X.over?.length)) return "";
+    const list = (rows) => `<table class="tr-top"><thead><tr><th>Игрок</th><th class="num">Цена</th><th class="num" title="голы + ассисты за сезон">Г+А</th><th class="num" title="ожидаемые голы + ожидаемые ассисты">xG+xA</th><th class="num" title="Г+А минус xG+xA">Разница</th></tr></thead><tbody>${rows.map((p) => `<tr><td>${pname(p)}</td>
+        <td class="num">${num(p.price)}</td><td class="num">${int(p.ga)}</td><td class="num">${num(p.xg + p.xa)}</td><td class="num"><b class="${p.diff > 0 ? "up" : "down"}">${p.diff > 0 ? "+" : "−"}${num(Math.abs(p.diff))}</b></td></tr>`).join("") || '<tr><td class="empty">Нет</td></tr>'}</tbody></table>`;
+    return `<section><h2>Реализация: голы и ассисты против xG+xA</h2>
+      <p class="lede">Сезон, все турниры (FotMob), полевые игроки от ${int(X.minMinutes)} минут. Недобирают — моменты есть, а голов и передач меньше ожидаемого: часто это невезение, которое выравнивается. Перебирают — реализуют выше ожидаемого: возможен спад.</p>
+      <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:8px">Недобирают</h3><div class="table-wrap">${list(X.under)}</div></section>
+        <section style="margin-top:0"><h3 style="margin-bottom:8px">Перебирают</h3><div class="table-wrap">${list(X.over)}</div></section></div></section>`;
+  }
   function tabPlayers(t) {
-    return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
+    return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${xgxBlock(t)}${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
   }
   function tabSummary(t) {
     const S = t.summary;
@@ -419,6 +432,7 @@
         <td class="num">${num(p.price)}</td><td class="num"><b>${num(p.x?.[0])}</b>${p.sd != null ? `<span class="sub">± ${num(p.sd)}</span>` : ""}</td>
         <td class="num">${int(p.fo)}</td><td class="num">${num(p.avg)}</td><td class="num">${int(p.form)}</td><td class="num">${p.sel == null ? "—" : num(p.sel) + "%"}</td><td class="num">${dsel(p.dsel)}</td>
         <td class="opp">${opp}</td><td class="num">${pct(p.st)}</td><td class="num">${pct(p.app)}</td><td class="num">${int(p.min)}</td>
+        <td class="num">${p.xg == null ? "—" : num(p.xg)}</td><td class="num">${p.xa == null ? "—" : num(p.xa)}</td><td class="num">${p.xg == null ? "—" : `<b>${num(p.xg + p.xa)}</b>`}</td>
         ${COMP.map(([k]) => `<td class="num c-cell">${p.c?.[k] ? num(p.c[k]) : '<span class="sub">·</span>'}</td>`).join("")}
         <td class="num">${num(p.x?.[1])}</td><td class="num">${num(p.x?.[2])}</td><td class="num">${num(p.own)}%</td></tr>`;
     }).join("") || `<tr><td colspan="${PCOLS.length}" class="empty">Нет игроков.</td></tr>`;
