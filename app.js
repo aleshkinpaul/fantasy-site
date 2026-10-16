@@ -257,7 +257,18 @@
         <p class="sub" style="margin-top:10px">Бюджет после трансферов: ${num(sc.budget?.costAfter)} из ${num(sc.budget?.limit, 0)}, в банке ${num(sc.bankAfter)}.</p>
       </div></div>`;
   }
+  function insightBlock(t) {
+    const L = t.insightLeague, me = t.insightMe;
+    if (!L && !me) return "";
+    const mdh = (s) => (window.marked ? window.marked.parse(s) : `<p>${esc(s)}</p>`);
+    return `<section class="callout insight" style="margin-top:0;border-left-color:var(--pitch)"><h2 style="margin-top:0">🧠 Разбор Claude${L ? ` · ${esc(L.tour || "")}, ${L.window === "pre1" ? "за час до дедлайна" : "за сутки"}` : ""}</h2>
+      ${L ? `<p class="sub">${esc(dateTime(L.builtAt))} МСК (${ago(L.builtAt)})</p><div class="md">${mdh(L.league)}</div>` : ""}
+      ${me ? `<h3>Твой состав</h3><div class="md">${mdh(me)}</div>` : ""}</section>`;
+  }
   function tabScenarios(t, state) {
+    return insightBlock(t) + tabScenariosModel(t, state);
+  }
+  function tabScenariosModel(t, state) {
     const r = t.rec;
     if (!r || !r.scenarios) return `<p class="empty">Рекомендаций пока нет — они считаются за сутки, за 3 часа и за час до дедлайна.</p>`;
     const keys = ["safe", "normal", "risky", "extreme"].filter((k) => r.scenarios[k]);
