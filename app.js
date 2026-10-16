@@ -344,8 +344,16 @@
       <div class="split"><section style="margin-top:0"><h3 style="margin-bottom:8px">Недобирают</h3><div class="table-wrap">${list(X.under)}</div></section>
         <section style="margin-top:0"><h3 style="margin-bottom:8px">Перебирают</h3><div class="table-wrap">${list(X.over)}</div></section></div></section>`;
   }
+  function diffsBlock(t) {
+    const D = t.diffs?.list, top = t.diffs?.top100;
+    if (!D?.length) return "";
+    return `<section><h3 style="margin-bottom:8px">Диффы против топ-100</h3>
+      <p class="sub" style="margin-bottom:8px">${top ? "Почти нет в топ-100 (владение до 10%)" : "Составов топ-100 к расчёту ещё не было — владение по всем командам (до 10%)"}, но модель ждёт много очков на этот и следующий тур — шанс обойти соперников.</p>
+      <div class="table-wrap"><table class="tr-top"><thead><tr><th>Игрок</th><th class="num">Цена</th>${top ? '<th class="num" title="владение в топ-100">Топ-100</th>' : ""}<th class="num" title="популярность среди всех команд">Попул.</th><th class="num" title="ожидаемые очки на тур">xPts</th><th class="num" title="xPts на этот и следующий тур">2 тура</th><th>Почему</th></tr></thead><tbody>${D.map((p) => `<tr><td>${pname(p)}</td>
+        <td class="num">${num(p.price)}</td>${top ? `<td class="num">${num(p.own)}%</td>` : ""}<td class="num">${p.selectedBy == null ? "—" : num(p.selectedBy) + "%"}</td><td class="num"><b>${num(p.x)}</b></td><td class="num">${num(p.sum2)}</td><td class="sub">${esc(p.why || "")}</td></tr>`).join("")}</tbody></table></div></section>`;
+  }
   function tabPlayers(t) {
-    return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${xgxBlock(t)}${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
+    return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${xgxBlock(t)}${diffsBlock(t)}${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
   }
   function tabSummary(t) {
     const S = t.summary;
