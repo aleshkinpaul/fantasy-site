@@ -367,6 +367,9 @@
     return `<section style="margin-top:0"><h2>Трансферы к туру</h2>${transfersBlock(t)}</section>${xgxBlock(t)}${diffsBlock(t)}${playersSection(t) || '<p class="empty">Таблица игроков считается вместе с рекомендациями — пока её нет.</p>'}`;
   }
   function tabSummary(t) {
+    return insightBlock(t) + tabSummaryModel(t);
+  }
+  function tabSummaryModel(t) {
     const S = t.summary;
     if (!S) return `<p class="empty">Сводки пока нет.</p>`;
     const n = t.rec?.scenarios?.normal;
