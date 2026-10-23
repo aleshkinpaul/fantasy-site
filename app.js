@@ -5,7 +5,7 @@
   const ORDER = ["russia", "england", "spain", "champions-league"];
   const TABS = [
     ["summary", "Сводка"], ["players", "Игроки"], ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
-    ["top", "Топ-100"], ["injuries", "Травмы"], ["report", "Отчёт"],
+    ["retro", "Ретро"], ["top", "Топ-100"], ["injuries", "Травмы"], ["report", "Отчёт"],
   ];
   const cache = {};
   const app = document.getElementById("app");
@@ -234,7 +234,7 @@
 
   // ---------- турнир ----------
   const man = (p, sc = {}) => `<div class="p-man${p.name === sc.captain ? " c" : ""}${p.pStart != null && p.pStart < 0.6 ? " low" : ""}${p.new ? " new" : ""}" title="${esc(`${p.name} · ${p.pos || ""} · ${p.team} · ${p.price} млн · старт ${pct(p.pStart)}${p.new ? " · новичок" : ""}`)}">
-      <div class="shirt">${face(p.id, "ph") || crest(p.team, "ph crest-only") || num(p.xPts?.[0], 0)}${p.name === sc.captain ? '<i class="badge">К</i>' : p.name === sc.vice ? '<i class="badge v">В</i>' : ""}${face(p.id, "ph") ? crest(p.team, "mini") : ""}</div>${p.new ? '<i class="new-tag">новый</i>' : ""}<b>${esc(lastName(p.name))}</b>${num(p.xPts?.[0])}</div>`;
+      <div class="shirt">${face(p.id, "ph") || crest(p.team, "ph crest-only") || num(p.xPts?.[0], 0)}${p.name === sc.captain ? '<i class="badge">К</i>' : p.name === sc.vice ? '<i class="badge v">В</i>' : ""}${face(p.id, "ph") ? crest(p.team, "mini") : ""}</div>${p.new ? '<i class="new-tag">новый</i>' : ""}<b>${esc(lastName(p.name))}</b>${p.pts !== undefined ? int(p.pts) : num(p.xPts?.[0])}</div>`;
   function pitch(sc, bench = sc.bench) {
     const lines = { ВР: [], ЗЩ: [], ПЗ: [], НП: [] };
     (sc.xi || []).forEach((p) => (lines[p.pos] || (lines[p.pos] = [])).push(p));
@@ -310,6 +310,43 @@
       <div class="pitch-wrap">${pitch(idl)}<div><h3 style="margin-bottom:8px">${esc(idl.formation)} · капитан ${esc(idl.captain)}, вице ${esc(idl.vice)}</h3>
         <p class="sub">Игроки отбираются только из тех, у кого в туре есть матч и кто регулярно играет (фильтр минут).</p>
         <p class="sub" style="margin-top:8px">Все игроки лиги с ожидаемыми очками — на вкладке <a href="#/t/${esc(t.slug)}/players">Игроки</a>.</p></div></div>`;
+  }
+  // ретро тура (tools/retro.py): основа с фактическими очками на поле
+  const rPitch = (l) => pitch({ xi: (l?.xi || []).map((x) => ({ ...x, pts: x.pts ?? null })), captain: l?.captain }, []);
+  const rTotal = (l) => `${l.forecast != null ? `прогноз ${num(l.forecast)} → ` : ""}факт <b>${int(l.actual)}</b>${l.unknown ? ` <span class="sub">(очки ${l.unknown} игр. неизвестны)</span>` : ""}`;
+  const mdh = (s) => (window.marked ? window.marked.parse(s) : `<p>${esc(s)}</p>`);
+  function tabRetro(t, st) {
+    const R = t.retro || [];
+    if (!R.length) return `<p class="empty">Ретро появится после первого завершённого тура с сохранённым советом тренера.</p>`;
+    const r = R.find((x) => x.tour.id === st.rt) || R[0];
+    const me = PROFILE && r.members?.[PROFILE.id];
+    const seg = `<div class="seg mt-tabs" role="tablist">${R.map((x) => `<button data-rt="${esc(x.tour.id)}" aria-pressed="${x === r}">${esc(x.tour.name)}</button>`).join("")}</div>`;
+    const trs = (list, f) => (list?.length ? `<p class="sub">${list.map(f).join(", ")}</p>` : "");
+    const mine = me ? `<section><h2>Совет тренера и твой выбор</h2><div class="split">
+        <div><h3>1. Что предлагал тренер</h3>${me.advice ? `<p>${rTotal(me.advice)} · капитан ${esc(me.advice.captain || "—")}</p>
+          ${trs(me.advice.transfers, (x) => `<span class="tr-out">${esc(lastName(x.out))}</span> → ${esc(lastName(x.in))}`)}${rPitch(me.advice)}` : '<p class="sub">Совета на этот тур не было.</p>'}</div>
+        <div><h3>2. Что выбрал ты</h3><p>${rTotal(me.chosen)} · капитан ${esc(me.chosen.captain || "—")}${me.points != null && me.points !== me.chosen.actual ? ` · в зачёте ${int(me.points)}` : ""}</p>
+          ${trs(me.transfers ? me.transfers.out.map((o, i) => [o, me.transfers.in[i]]) : [], ([o, i]) => `<span class="tr-out">${esc(lastName(o))}</span> → ${esc(lastName(i || ""))}`)}${rPitch(me.chosen)}</div></div>
+        <div class="callout"><h3 style="margin-top:0">3. Тренер: что сработало и что надо было иначе</h3>${me.comment ? `<div class="md">${mdh(me.comment)}</div>` : '<p class="sub">Комментария пока нет.</p>'}</div></section>`
+      : `<p class="empty">Выбери профиль вверху, чтобы увидеть совет и свой выбор.</p>`;
+    const mb = r.modelBest, rb = r.realBest, a = r.accuracy, M = t.retroModel;
+    const best = `<section><h2>Сильнейший состав</h2><div class="split">
+        <div><h3>4. Сильнейший по модели перед туром</h3>${mb ? `<p>${rTotal(mb)} · капитан ${esc(mb.captain)}</p>${rPitch(mb)}` : '<p class="sub">Не сохранён.</p>'}</div>
+        <div><h3>5. Реально сильнейший по набранным ФО</h3>${rb ? `<p>факт <b>${int(rb.actual)}</b> · капитан ${esc(rb.captain)} · стоимость 15 игроков ${num(rb.cost)}${rb.overlap != null ? ` · совпало с моделью ${rb.overlap} из 11` : ""}</p>${rPitch(rb)}` : '<p class="sub">Нет данных об очках.</p>'}</div></div>
+        <p class="sub">Те же правила: 15 игроков 2/5/5/3, бюджет 100, не больше 3 из клуба; на поле — фактические очки за тур (капитан ×2 в сумме).</p></section>`;
+    const bias = a ? Object.entries(a.bias).map(([k, b]) => `<tr><td>${posb(k)}</td><td class="num">${num(b.pred)}</td><td class="num">${num(b.act, 0)}</td><td class="num">${b.pred ? Math.round((100 * b.act) / b.pred) + "%" : "—"}</td></tr>`).join("") : "";
+    const miss = (l) => (l || []).map((x) => `<li>${esc(x.name)} <span class="sub">${esc(x.team || "")} · прогноз ${num(x.x)} → факт ${int(x.pts ?? 0)}</span></li>`).join("");
+    const model = `<section><h2>6. Тренер против факта: точность и дообучение</h2>
+        ${r.comment ? `<div class="callout"><div class="md">${mdh(r.comment)}</div></div>` : ""}
+        ${a ? `<div class="stat-line"><div><span>Ошибка на игрока</span><b>${num(a.mae, 2)}</b></div><div><span>Корреляция рангов</span><b>${num(a.rho, 2)}</b></div>
+          <div><span>Угадано из топ-20</span><b>${a.top20} из 20</b></div>${a.start ? `<div><span>Выход: прогноз / факт</span><b>${pct(a.start.pred)} / ${pct(a.start.act)}</b></div>` : ""}</div>
+          <div class="split"><div><h3>Переоценили</h3><ul>${miss(a.over)}</ul><h3>Недооценили</h3><ul>${miss(a.under)}</ul></div>
+          <div><h3>Сумма очков по амплуа</h3><table><thead><tr><th>Поз.</th><th class="num">Прогноз</th><th class="num">Факт</th><th class="num">Факт/прогноз</th></tr></thead><tbody>${bias}</tbody></table></div></div>`
+          : '<p class="sub">Полного прогноза по всем игрокам на этот тур не сохранилось — точность считается с туров после 20.10.2026.</p>'}
+        ${M ? `<p class="sub" style="margin-top:12px">Дообучение: накоплено туров с прогнозом — ${M.toursCount} (средняя ошибка ${num(M.mae, 2)}, корреляция ${num(M.rho, 2)}). ${Object.keys(M.factors || {}).length
+          ? "Поправки модели по амплуа: " + Object.entries(M.factors).map(([k, f]) => `${k} ×${num(f, 2)}`).join(", ") + "."
+          : `Поправки включатся с ${M.minTours}-го тура: модель будет умножать прогноз амплуа на накопленное «факт/прогноз» (со сжатием, не больше ±15%).`}</p>` : ""}</section>`;
+    return `${seg}<p class="lede">${esc(r.tour.name)}${r.interim ? " · промежуточные очки (могут поправить в течение 72 ч)" : ""} · обновлено ${esc(dateTime(r.builtAt))} МСК</p>${mine}${best}${model}`;
   }
   const COMP = [["minutes", "Мин", "минуты на поле"], ["goals", "Голы", "голы"], ["assists", "Асс", "голевые передачи"],
     ["fantasyAssists", "Ф-асс", "фэнтези-ассисты"], ["cleanSheet", "Сух", "сухой матч"], ["conceded", "Пропущ", "пропущенные (−1 за 2)"],
@@ -531,13 +568,14 @@
     const st = (state[route.slug] = state[route.slug] || {});
     const s = t.squad || {};
     const personalTab = ["scenarios", "squad", "ideal", "report"].includes(route.tab);
-    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { summary: tabSummary, players: tabPlayers, scenarios: tabScenarios, squad: tabSquad, ideal: tabIdeal, fixtures: tabFixtures, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
+    const body = personalTab && !t.hasSquad ? `<p class="empty">У профиля «${esc(PROFILE?.name || "")}» нет команды в этом турнире.</p>` : { summary: tabSummary, players: tabPlayers, scenarios: tabScenarios, squad: tabSquad, ideal: tabIdeal, fixtures: tabFixtures, retro: tabRetro, top: tabTop, injuries: tabInjuries, report: tabReport }[route.tab](t, st);
     app.innerHTML = `<div class="t-head"><h1>${esc(t.name)}</h1><div class="t-facts">
         <div><span>Место</span><b>${int(s.place)} ${placeDiff(s.placeDiff)}</b></div><div><span>Очки</span><b>${int(s.score)}</b></div>
         <div><span>${esc(t.nextTour?.name || "Тур")}</span><b>${t.nextTour?.deadline ? cd(t.nextTour.deadline) : "—"}</b></div></div></div>
       <nav class="tabs" aria-label="Разделы турнира">${TABS.map(([k, l]) => `<a href="#/t/${route.slug}/${k}"${k === route.tab ? ' aria-current="page"' : ""}>${l}</a>`).join("")}</nav>
       <div id="tab">${body}</div>`;
     app.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => { st.sc = b.dataset.sc; tournamentPage(route); }));
+    app.querySelectorAll("[data-rt]").forEach((b) => b.addEventListener("click", () => { st.rt = b.dataset.rt; tournamentPage(route); }));
     app.querySelectorAll("[data-fx]").forEach((b) => b.addEventListener("click", () => { st.fx = b.dataset.fx; tournamentPage(route); }));
     app.querySelectorAll("[data-mt]").forEach((b) => b.addEventListener("click", () => {
       app.querySelectorAll("[data-mt]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
