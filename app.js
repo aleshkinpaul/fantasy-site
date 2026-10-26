@@ -208,7 +208,7 @@
       const me = r.id === PROFILE?.id;
       return `<tr class="ar-row${me ? " mine" : ""}" data-pid="${esc(r.id)}" tabindex="0" title="Открыть команды: ${esc(r.name)}">
         <td class="num rk">${r.rank}</td>
-        <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b><span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
+        <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b>${(r.trophies || []).map((m) => `<i class="cup" title="Игрок месяца: ${esc(m)}">🏆</i>`).join("")}<span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
         <td class="rt"><div class="rt-bar"><i style="width:${((r.rating || 0) / best * 100).toFixed(1)}%"></i></div><b>${pc(r.rating)}</b></td>
         ${cells}
         <td class="num"><b>${int(r.total)}</b><span class="sub">${r.lastTour == null ? "за тур —" : "+" + int(r.lastTour) + " за тур"}</span></td>
@@ -220,16 +220,57 @@
         <div class="crest-big"><img src="logo.png" alt="AREAL FFC"></div>
         <h1>Рейтинг ${esc(ov.team || "AREAL FFC")}${lead ? `<span class="when">лидирует ${esc(lead.name)} · ${pc(lead.rating)}</span>` : ""}</h1>
         <p class="meta">${A.rows.length} участников · ${leagues.length} лиги${A.snapshotAt ? ` · данные на ${esc(dateTime(A.snapshotAt))} МСК` : ""}<br>Нажмите на строку, чтобы открыть команды участника</p></div>
-      <div class="table-wrap"><table class="areal">
+      <div class="ar-grid"><div class="ar-main"><div class="table-wrap"><table class="areal">
         <thead><tr><th class="num">#</th><th>Участник</th><th>Рейтинг</th>${head}<th class="num">Всего ФО</th><th class="num">По месту</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
       <p class="lede" style="margin-top:12px">Рейтинг — очки команды в каждой лиге, делённые на очки лидера общего зачёта sports.ru, в среднем по лигам, где участник играет. Под очками — этот процент и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
-      ${strip(ov, true)}`;
+      ${strip(ov, true)}</div>${monthsAside(A.months || [], short)}</div>`;
+    app.querySelectorAll(".mo-row").forEach((el) => el.addEventListener("click", () => { store.set(el.dataset.pid); location.hash = "#/me"; }));
     app.querySelectorAll(".ar-row").forEach((tr) => {
       const go = () => { store.set(tr.dataset.pid); location.hash = "#/me"; };
       tr.addEventListener("click", go);
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
     });
+  }
+
+  // Игрок месяца: тот же рейтинг, но только по турам, начавшимся в календарном месяце; каждый месяц с нуля
+  function monthsAside(months, short) {
+    if (!months.length) return "";
+    const pc = (x) => (x == null ? "—" : num(x * 100, 1));
+    const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+    const list = (m) => {
+      const top = m.rows[0]?.rating || 1;
+      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%)`).join(" · "))}">
+        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><b>${esc(r.name)}</b><span class="rt-bar"><i style="width:${(r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
+    };
+    const champ = (m) => {
+      const w = m.rows.filter((r) => m.winners.includes(r.id));
+      if (!w.length) return "";
+      return `<div class="mo-champ${m.final ? " final" : ""}">
+        <div class="mo-avas">${w.map((r) => ava(r, "ava mo-ava")).join("")}<span class="mo-crown" aria-hidden="true">${m.final ? "🏆" : "👑"}</span></div>
+        <p class="mo-kicker">${m.final ? "Игрок месяца" : "Лидер месяца"}</p>
+        <p class="mo-name">${w.map((r) => esc(r.name)).join(" и ")}</p>
+        <p class="mo-score">${pc(w[0].rating)}<span>${m.final ? "итог" : "пока"}</span></p></div>`;
+    };
+    const tours = (m) => Object.entries(m.tours).map(([s, t]) => `${short[s]} ${t.length}`).join(" · ");
+    const [cur, ...past] = months;
+    const note = (m) => (m.missing ? `<p class="sub mo-note">Нет лучшего результата для ${m.missing} тур. — они пока не в зачёте</p>` : "");
+    return `<aside class="ar-side" aria-label="Игрок месяца">
+      <h2>Игрок месяца</h2>
+      <div class="mo-card cur">
+        <div class="mo-head"><b>${cap(cur.label)}</b><span class="pill ${cur.final ? "ok" : "warn"}">${cur.final ? "итог" : "идёт"}</span></div>
+        <p class="sub">Туры: ${tours(cur)}</p>
+        ${champ(cur)}${cur.rows.length ? list(cur) : '<p class="empty">Пока нет данных за этот месяц.</p>'}${note(cur)}
+      </div>
+      ${past.map((m) => {
+        const w = m.rows.filter((r) => m.winners.includes(r.id));
+        return `<details class="mo-card">
+        <summary><span class="mo-head"><b>${cap(m.label)}</b>${m.final ? "" : '<span class="pill warn">подсчёт</span>'}</span>
+          <span class="mo-sum">${w.length ? `${w.map((r) => ava(r, "ava sm")).join("")}<span>${m.final ? "🏆" : "👑"} ${w.map((r) => esc(r.name)).join(" и ")} · ${pc(w[0].rating)}</span>` : '<span class="sub">нет данных</span>'}</span></summary>
+        <p class="sub">Туры: ${tours(m)}</p>${champ(m)}${list(m)}${note(m)}</details>`;
+      }).join("")}
+      <p class="sub mo-how">Считается как общий рейтинг, но только по турам, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. В лиге — очки участника, делённые на сумму лучших результатов этих туров по всему турниру, затем среднее по лигам. Итог — после заморозки очков последнего тура месяца.</p>
+    </aside>`;
   }
 
   // ---------- турнир ----------
@@ -665,6 +706,7 @@
       pickProfile(ov);
       renderNav(ov, route);
       foot.innerHTML = `Последнее обновление данных ${esc(dateTime(ov.builtAt))} МСК · время везде московское`;
+      app.classList.toggle("wide", route.page === "areal");
       if (route.page === "t") await tournamentPage(route);
       else if (route.page === "data") dataPage(ov);
       else if (route.page === "rules") await rulesPage(route);
