@@ -208,7 +208,7 @@
       const me = r.id === PROFILE?.id;
       return `<tr class="ar-row${me ? " mine" : ""}" data-pid="${esc(r.id)}" tabindex="0" title="Открыть команды: ${esc(r.name)}">
         <td class="num rk">${r.rank}</td>
-        <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b>${(r.trophies || []).map((m) => `<i class="cup" title="Игрок месяца: ${esc(m)}">🏆</i>`).join("")}<span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
+        <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b>${r.trophies?.length ? `<i class="cup" title="Игрок месяца: ${esc(r.trophies.join(", "))}">🏆${r.trophies.length > 1 ? `<b>×${r.trophies.length}</b>` : ""}</i>` : ""}<span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
         <td class="rt"><div class="rt-bar"><i style="width:${((r.rating || 0) / best * 100).toFixed(1)}%"></i></div><b>${pc(r.rating)}</b></td>
         ${cells}
         <td class="num"><b>${int(r.total)}</b><span class="sub">${r.lastTour == null ? "за тур —" : "+" + int(r.lastTour) + " за тур"}</span></td>

@@ -119,7 +119,8 @@ img.ava { object-fit: contain; border-radius: 0; background: none; } /* PNG с �
 .rt-bar i { display: block; height: 100%; background: var(--pitch); border-radius: 3px; }
 .areal tbody tr:first-child .rt-bar i { background: var(--yellow); }
 .lg-col b { font-size: 16px; }
-.cup { font-style: normal; font-size: 14px; margin-left: 4px; cursor: help; }
+.cup { font-style: normal; font-size: 14px; margin-left: 4px; cursor: help; white-space: nowrap; }
+.cup b { font-size: 12px; font-weight: 800; color: var(--club); margin-left: 1px; }
 
 /* Игрок месяца: справа от рейтинга на широком экране, в конце страницы на узком */
 main.wide { max-width: 1480px; }
