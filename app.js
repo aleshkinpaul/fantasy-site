@@ -3,6 +3,8 @@
   "use strict";
   const TZ = "Europe/Moscow";
   const ORDER = ["russia", "england", "spain", "champions-league"];
+  const b10 = (x) => num(x, 2);
+  const s1 = (x) => num(x, 1);   // рейтинг — сумма баллов туров   // баллы рейтинга AREAL: 0–10 за тур, 5 — медиана sports.ru
   const LG_ABBR = { russia: "РПЛ", england: "АПЛ", spain: "ЛЛ", "champions-league": "ЛЧ" };
   const TABS = [
     ["summary", "Сводка"], ["players", "Игроки"], ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
@@ -210,7 +212,7 @@
       return `<tr class="ar-row${me ? " mine" : ""}" data-pid="${esc(r.id)}" tabindex="0" title="Открыть команды: ${esc(r.name)}">
         <td class="num rk">${r.rank}</td>
         <td><div class="who-cell">${ava(r)}<span><b>${esc(r.name)}</b>${r.trophies?.length ? `<i class="cup" title="Игрок месяца: ${esc(r.trophies.join(", "))}">🏆${r.trophies.length > 1 ? `<b>×${r.trophies.length}</b>` : ""}</i>` : ""}<span class="sub">${Object.keys(r.leagues).length} ${Object.keys(r.leagues).length === 1 ? "лига" : "лиги"}</span></span></div></td>
-        <td class="rt"><div class="rt-bar"><i style="width:${Math.max(0, (r.rating || 0) / best * 100).toFixed(1)}%"></i></div><b>${pc(r.rating)}</b></td>
+        <td class="rt"><div class="rt-bar"><i style="width:${Math.max(0, (r.rating || 0) / (10 * (A.tours || 1)) * 100).toFixed(1)}%"></i></div><b>${s1(r.rating)}</b></td>
         ${cells}
         <td class="num"><b>${int(r.total)}</b><span class="sub">${r.lastTour == null ? "за тур —" : "+" + int(r.lastTour) + " за тур"}</span></td>
         <td class="num"><span title="Средняя доля обойдённых соперников по всем лигам">${pc(r.byPlace)}</span><span class="sub">${r.rankByPlace}-е место</span></td>
@@ -219,12 +221,12 @@
     const leadersLine = leagues.map((s) => `${esc(short[s])} — ${int(A.leaders[s]?.score)} («${esc(A.leaders[s]?.name || "")}», из ${int(A.leaders[s]?.total)})`).join("; ");
     app.innerHTML = `<div class="hero areal-hero">
         <div class="crest-big"><img src="logo.png" alt="AREAL FFC"></div>
-        <h1>Рейтинг ${esc(ov.team || "AREAL FFC")}${lead ? `<span class="when">лидирует ${esc(lead.name)} · ${pc(lead.rating)}</span>` : ""}</h1>
+        <h1>Рейтинг ${esc(ov.team || "AREAL FFC")}${lead ? `<span class="when">лидирует ${esc(lead.name)} · ${s1(lead.rating)}</span>` : ""}</h1>
         <p class="meta">${A.rows.length} участников · ${leagues.length} лиги${A.snapshotAt ? ` · данные на ${esc(dateTime(A.snapshotAt))} МСК` : ""}<br>Нажмите на строку, чтобы открыть команды участника</p></div>
       <div class="ar-grid"><div class="ar-main"><div class="table-wrap"><table class="areal">
         <thead><tr><th class="num">#</th><th>Участник</th><th>Рейтинг</th>${head}<th class="num">Всего ФО</th><th class="num">По месту</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
-      <p class="lede" style="margin-top:12px">Рейтинг — по каждому туру сезона всех четырёх лиг: где очки участника между медианной командой sports.ru (0) и лучшей командой тура (100), то есть (очки − медиана) ÷ (лучший − медиана). Тур, где у участника нет команды, засчитывается медианой (0). Итог — среднее по всем ${A.tours || ""} турам. Под очками лиги — процент от лидера общего зачёта и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
+      <p class="lede" style="margin-top:12px">Рейтинг — баллы от 0 до 10 за каждый тур сезона всех четырёх лиг: 10 — лучшая команда тура, 5 — медианная команда sports.ru, то есть 5 + 5 × (очки − медиана) ÷ (лучший − медиана). Тур, где у участника нет команды, — медиана (5 баллов). Итог — сумма баллов по всем ${A.tours || ""} турам (максимум ${10 * (A.tours || 0)}); туров у всех поровну. Под очками лиги — процент от лидера общего зачёта и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
       ${strip(ov, true)}</div>${monthsAside(A.months || [], short)}</div>`;
     app.querySelectorAll(".mo-row").forEach((el) => el.addEventListener("click", () => { store.set(el.dataset.pid); location.hash = "#/me"; }));
     app.querySelectorAll(".ar-row").forEach((tr) => {
@@ -242,7 +244,7 @@
     // мини-значки лиг в постоянном порядке: играет — цветной, не играет — пунктир (в турах засчитана медиана sports.ru = 0)
     const lgMarks = (r, m) => `<span class="lg-marks">${ORDER.filter((s) => m.tours[s]).map((s) => {
       const l = r.leagues[s];
-      const tip = l ? `${short[s]}: ${pc(l.rel)} — среднее туров: ${l.list.map((x) => `${x.tour} ${x.pts} (медиана ${x.med}, лучший ${x.max}) → ${pc(x.rel)}`).join("; ")}` : `${short[s]}: не играет — в каждом туре засчитана медиана sports.ru (0)`;
+      const tip = l ? `${short[s]}: ${b10(l.rel)} — среднее туров: ${l.list.map((x) => `${x.tour} ${x.pts} (медиана ${x.med}, лучший ${x.max}) → ${b10(x.rel)}`).join("; ")}` : `${short[s]}: не играет — в каждом туре засчитана медиана sports.ru (5 баллов)`;
       return `<i class="lg lg-${s} ${l ? "on" : "pad"}" title="${esc(tip)}">${LG_ABBR[s]}</i>`;
     }).join("")}</span>`;
     // расшифровка рейтинга месяца: вклад каждого тура (индекс тура; нет команды — медиана = 0) и итог
@@ -250,16 +252,16 @@
       let sum = 0;
       const lines = ORDER.filter((s) => m.tours[s]).flatMap((s) => m.tours[s].map((name) => {
         const x = r.leagues[s]?.list.find((y) => y.tour === name);
-        if (!x) return `${short[s]}, ${name}: нет команды — медиана → 0`;
+        if (!x) { sum += 5; return `${short[s]}, ${name}: нет команды — медиана → 5,00`; }
         sum += x.rel;
-        return `${short[s]}, ${name}: ${x.pts} очк. (медиана ${x.med}, лучший ${x.max}) → ${pc(x.rel)}`;
+        return `${short[s]}, ${name}: ${x.pts} очк. (медиана ${x.med}, лучший ${x.max}) → ${b10(x.rel)}`;
       }));
-      return `${lines.join("\n")}\n—\nСумма ${pc(sum)} ÷ ${m.n} тур. = ${pc(r.rating)}`;
+      return `${lines.join("\n")}\n—\nСумма за ${m.n} тур. = ${s1(sum)}`;
     };
     const list = (m) => {
       const top = m.rows[0]?.rating || 1;
       return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}">
-        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${Math.max(0, r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v" title="${esc(breakdown(r, m))}"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
+        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${Math.max(0, r.rating / (10 * m.n) * 100).toFixed(1)}%"></i></span></span><span class="mo-v" title="${esc(breakdown(r, m))}"><b>${s1(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
     };
     const champ = (m) => {
       const w = m.rows.filter((r) => m.winners.includes(r.id));
@@ -268,7 +270,7 @@
         <div class="mo-avas">${w.map((r) => ava(r, "ava mo-ava")).join("")}<span class="mo-crown" aria-hidden="true">${m.final ? "🏆" : "👑"}</span></div>
         <p class="mo-kicker">${m.final ? "Игрок месяца" : "Лидер месяца"}</p>
         <p class="mo-name">${w.map((r) => esc(r.name)).join(" и ")}</p>
-        <p class="mo-score">${pc(w[0].rating)}<span>${m.final ? "итог" : "пока"}</span></p></div>`;
+        <p class="mo-score">${s1(w[0].rating)}<span>${m.final ? "итог" : "пока"}</span></p></div>`;
     };
     const tours = (m) => Object.entries(m.tours).map(([s, t]) => `${short[s]} ${t.length}`).join(" · ");
     const [cur, ...past] = months;
@@ -284,7 +286,7 @@
         const w = m.rows.filter((r) => m.winners.includes(r.id));
         return `<details class="mo-card">
         <summary><span class="mo-head"><b>${cap(m.label)}</b>${m.final ? "" : '<span class="pill warn">подсчёт</span>'}</span>
-          <span class="mo-sum">${w.length ? `${w.map((r) => ava(r, "ava sm")).join("")}<span>${m.final ? "🏆" : "👑"} ${w.map((r) => esc(r.name)).join(" и ")} · ${pc(w[0].rating)}</span>` : '<span class="sub">нет данных</span>'}</span></summary>
+          <span class="mo-sum">${w.length ? `${w.map((r) => ava(r, "ava sm")).join("")}<span>${m.final ? "🏆" : "👑"} ${w.map((r) => esc(r.name)).join(" и ")} · ${s1(w[0].rating)}</span>` : '<span class="sub">нет данных</span>'}</span></summary>
         <p class="sub">Туры: ${tours(m)}</p>${champ(m)}${list(m)}${note(m)}</details>`;
       }).join("")}
       <p class="sub mo-how">Только туры, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. Считается так же, как общий рейтинг, но по турам месяца. Итог — после заморозки очков последнего тура месяца.</p>
