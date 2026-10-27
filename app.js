@@ -203,7 +203,7 @@
       const cells = leagues.map((s) => {
         const l = r.leagues[s];
         if (!l) return `<td class="num lg-col"><span class="sub">—</span></td>`;
-        return `<td class="num lg-col"><b>${int(l.score)}</b><span class="sub">${pc(l.norm, 0)}% · ${int(l.place)} м.</span></td>`;
+        return `<td class="num lg-col"><b>${int(l.score)}</b><span class="sub" title="${pc(l.norm, 1)}% от лидера sports.ru; средний AREAL в лиге — ${pc(A.leagueAvg?.[s], 1)}%">${pc(l.norm, 0)}% · ${int(l.place)} м.</span></td>`;
       }).join("");
       const me = r.id === PROFILE?.id;
       return `<tr class="ar-row${me ? " mine" : ""}" data-pid="${esc(r.id)}" tabindex="0" title="Открыть команды: ${esc(r.name)}">
@@ -223,7 +223,7 @@
       <div class="ar-grid"><div class="ar-main"><div class="table-wrap"><table class="areal">
         <thead><tr><th class="num">#</th><th>Участник</th><th>Рейтинг</th>${head}<th class="num">Всего ФО</th><th class="num">По месту</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
-      <p class="lede" style="margin-top:12px">Рейтинг — очки команды в каждой лиге, делённые на очки лидера общего зачёта sports.ru, в среднем по лигам, где участник играет. Под очками — этот процент и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
+      <p class="lede" style="margin-top:12px">Рейтинг — очки команды в каждой лиге, делённые на очки лидера общего зачёта sports.ru, затем на средний такой результат AREAL в этой лиге (коэффициент сложности: в трудной лиге у всех проценты ниже), в среднем по лигам, где участник играет; 100 — средний уровень AREAL. Под очками — этот процент и место. «По месту» — какую долю соперников лиги участник опережает, тоже в среднем по лигам. Лидеры: ${leadersLine}.</p>
       ${strip(ov, true)}</div>${monthsAside(A.months || [], short)}</div>`;
     app.querySelectorAll(".mo-row").forEach((el) => el.addEventListener("click", () => { store.set(el.dataset.pid); location.hash = "#/me"; }));
     app.querySelectorAll(".ar-row").forEach((tr) => {
@@ -240,7 +240,7 @@
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
     const list = (m) => {
       const top = m.rows[0]?.rating || 1;
-      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%)`).join(" · "))}">
+      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%, индекс ${pc(l.rel)})${l.used ? "" : " — не в зачёте"}`).join(" · ") + (r.padded ? ` · ${r.padded} лига — по худшему в AREAL` : ""))}">
         <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><b>${esc(r.name)}</b><span class="rt-bar"><i style="width:${(r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
     };
     const champ = (m) => {
@@ -269,7 +269,7 @@
           <span class="mo-sum">${w.length ? `${w.map((r) => ava(r, "ava sm")).join("")}<span>${m.final ? "🏆" : "👑"} ${w.map((r) => esc(r.name)).join(" и ")} · ${pc(w[0].rating)}</span>` : '<span class="sub">нет данных</span>'}</span></summary>
         <p class="sub">Туры: ${tours(m)}</p>${champ(m)}${list(m)}${note(m)}</details>`;
       }).join("")}
-      <p class="sub mo-how">Считается как общий рейтинг, но только по турам, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. В лиге — очки участника, делённые на сумму лучших результатов этих туров по всему турниру, затем среднее по лигам. Итог — после заморозки очков последнего тура месяца.</p>
+      <p class="sub mo-how">Только туры, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. В лиге — очки участника, делённые на сумму лучших результатов этих туров по всему турниру, затем на средний такой результат AREAL в лиге (100 — средний уровень). В зачёт — 3 лучшие лиги участника; если своих лиг меньше, недостающая считается по худшему результату AREAL в ней. Итог — после заморозки очков последнего тура месяца.</p>
     </aside>`;
   }
 
