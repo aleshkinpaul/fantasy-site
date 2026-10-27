@@ -245,10 +245,21 @@
       const tip = l ? `${short[s]}: ${pc(l.rel)} — среднее туров: ${l.list.map((x) => `${x.tour} ${x.pts} (медиана ${x.med}, лучший ${x.max}) → ${pc(x.rel)}`).join("; ")}` : `${short[s]}: не играет — в каждом туре засчитана медиана sports.ru (0)`;
       return `<i class="lg lg-${s} ${l ? "on" : "pad"}" title="${esc(tip)}">${LG_ABBR[s]}</i>`;
     }).join("")}</span>`;
+    // расшифровка рейтинга месяца: вклад каждого тура (индекс тура; нет команды — медиана = 0) и итог
+    const breakdown = (r, m) => {
+      let sum = 0;
+      const lines = ORDER.filter((s) => m.tours[s]).flatMap((s) => m.tours[s].map((name) => {
+        const x = r.leagues[s]?.list.find((y) => y.tour === name);
+        if (!x) return `${short[s]}, ${name}: нет команды — медиана → 0`;
+        sum += x.rel;
+        return `${short[s]}, ${name}: ${x.pts} очк. (медиана ${x.med}, лучший ${x.max}) → ${pc(x.rel)}`;
+      }));
+      return `${lines.join("\n")}\n—\nСумма ${pc(sum)} ÷ ${m.n} тур. = ${pc(r.rating)}`;
+    };
     const list = (m) => {
       const top = m.rows[0]?.rating || 1;
-      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(`Средний индекс по ${m.n} турам${r.medianTours ? `, из них ${r.medianTours} — медиана (нет команды)` : ""}`)}">
-        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${Math.max(0, r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
+      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}">
+        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${Math.max(0, r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v" title="${esc(breakdown(r, m))}"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
     };
     const champ = (m) => {
       const w = m.rows.filter((r) => m.winners.includes(r.id));
