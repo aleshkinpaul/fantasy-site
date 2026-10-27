@@ -239,17 +239,15 @@
     if (!months.length) return "";
     const pc = (x) => (x == null ? "—" : num(x * 100, 1));
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-    // мини-значки лиг в постоянном порядке: в зачёте — цветной, сыграна, но не в зачёте — бледный,
-    // не играет, но засчитана по худшему AREAL — пунктир, не играет — пустое место
+    // мини-значки лиг в постоянном порядке: в зачёте — цветной, сыграна, но не в зачёте — бледный, не играет — пустое место
     const lgMarks = (r, m) => `<span class="lg-marks">${ORDER.filter((s) => m.tours[s]).map((s) => {
-      const l = r.leagues[s], pad = r.padded?.includes(s);
-      const st = l?.used ? "on" : l ? "off" : pad ? "pad" : "none";
-      const tip = l ? `${short[s]}: индекс ${pc(l.rel)}${l.used ? "" : " — не в зачёте"}` : pad ? `${short[s]}: не играет — засчитан худший результат AREAL` : `${short[s]}: не играет`;
-      return `<i class="lg lg-${s} ${st}" title="${esc(tip)}">${LG_ABBR[s]}</i>`;
+      const l = r.leagues[s];
+      const tip = l ? `${short[s]}: ${l.pts} очк. при медиане ${l.med} и лучшем ${l.cap} → ${pc(l.rel)}${l.used ? "" : " — не в зачёте"}` : `${short[s]}: не играет`;
+      return `<i class="lg lg-${s} ${!l ? "none" : l.used ? "on" : "off"}" title="${esc(tip)}">${LG_ABBR[s]}</i>`;
     }).join("")}</span>`;
     const list = (m) => {
       const top = m.rows[0]?.rating || 1;
-      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%, индекс ${pc(l.rel)})${l.used ? "" : " — не в зачёте"}`).join(" · ") + (r.padded?.length ? ` · ${r.padded.map((s) => short[s]).join(", ")} — по худшему в AREAL` : ""))}">
+      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).filter(([, l]) => l.used).map(([s, l]) => `${short[s]} ${pc(l.rel)}`).join(" · "))}">
         <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${(r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
     };
     const champ = (m) => {
@@ -278,7 +276,7 @@
           <span class="mo-sum">${w.length ? `${w.map((r) => ava(r, "ava sm")).join("")}<span>${m.final ? "🏆" : "👑"} ${w.map((r) => esc(r.name)).join(" и ")} · ${pc(w[0].rating)}</span>` : '<span class="sub">нет данных</span>'}</span></summary>
         <p class="sub">Туры: ${tours(m)}</p>${champ(m)}${list(m)}${note(m)}</details>`;
       }).join("")}
-      <p class="sub mo-how">Только туры, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. В лиге — очки участника, делённые на сумму лучших результатов этих туров по всему турниру, затем на средний такой результат AREAL в лиге (100 — средний уровень). В зачёт — 3 лучшие лиги участника; если своих лиг меньше, недостающая считается по худшему результату AREAL в ней. Итог — после заморозки очков последнего тура месяца.</p>
+      <p class="sub mo-how">Только туры, которые начались в этом месяце (МСК); каждый месяц все стартуют с нуля. В каждой лиге — где очки участника за эти туры между медианной командой sports.ru (0) и лучшей командой туров (100): (очки − медиана) ÷ (лучший − медиана). В зачёт — ЛЧ всегда и 2 лучшие из остальных лиг; рейтинг — среднее. Итог — после заморозки очков последнего тура месяца.</p>
     </aside>`;
   }
 
