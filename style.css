@@ -162,7 +162,16 @@ details.mo-card[open] summary .mo-head::after { transform: rotate(180deg); }
 .mo-rk { font-weight: 800; color: var(--muted); text-align: center; }
 .mo-row.win .mo-rk { color: var(--club); }
 .mo-nm { min-width: 0; display: block; }
-.mo-nm b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mo-line { display: flex; align-items: center; gap: 8px; }
+.mo-nm b { display: block; min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-marks { display: inline-flex; gap: 3px; flex: none; }
+.lg { width: 26px; height: 16px; border-radius: 4px; font: 800 8.5px/16px "Golos Text", sans-serif; font-style: normal; text-align: center;
+  letter-spacing: .02em; color: #fff; background: var(--lgc); cursor: help; }
+.lg-russia { --lgc: #C0392B; } .lg-england { --lgc: #4B1E6E; } .lg-spain { --lgc: #E0701A; } .lg-champions-league { --lgc: #13306B; }
+@media (prefers-color-scheme: dark) { .lg-england { --lgc: #7B4BA8; } .lg-champions-league { --lgc: #3A63B8; } }
+.lg.off { background: none; color: var(--lgc); box-shadow: inset 0 0 0 1px var(--lgc); opacity: .45; }
+.lg.pad { background: none; color: var(--muted); box-shadow: inset 0 0 0 1px var(--muted); border: 0; outline: 1px dashed var(--muted); outline-offset: -1px; box-shadow: none; }
+.lg.none { background: none; color: transparent; box-shadow: inset 0 0 0 1px var(--line); }
 .mo-nm .rt-bar { display: block; height: 4px; margin: 4px 0 0; }
 .mo-v { text-align: right; line-height: 1.2; }
 .mo-v .sub { display: block; }

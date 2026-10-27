@@ -3,6 +3,7 @@
   "use strict";
   const TZ = "Europe/Moscow";
   const ORDER = ["russia", "england", "spain", "champions-league"];
+  const LG_ABBR = { russia: "РПЛ", england: "АПЛ", spain: "ЛЛ", "champions-league": "ЛЧ" };
   const TABS = [
     ["summary", "Сводка"], ["players", "Игроки"], ["scenarios", "Сценарии"], ["squad", "Мой состав"], ["ideal", "Сильнейший"], ["fixtures", "Календарь"],
     ["retro", "Ретро"], ["top", "Топ-100"], ["injuries", "Травмы"], ["report", "Отчёт"],
@@ -238,10 +239,18 @@
     if (!months.length) return "";
     const pc = (x) => (x == null ? "—" : num(x * 100, 1));
     const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+    // мини-значки лиг в постоянном порядке: в зачёте — цветной, сыграна, но не в зачёте — бледный,
+    // не играет, но засчитана по худшему AREAL — пунктир, не играет — пустое место
+    const lgMarks = (r, m) => `<span class="lg-marks">${ORDER.filter((s) => m.tours[s]).map((s) => {
+      const l = r.leagues[s], pad = r.padded?.includes(s);
+      const st = l?.used ? "on" : l ? "off" : pad ? "pad" : "none";
+      const tip = l ? `${short[s]}: индекс ${pc(l.rel)}${l.used ? "" : " — не в зачёте"}` : pad ? `${short[s]}: не играет — засчитан худший результат AREAL` : `${short[s]}: не играет`;
+      return `<i class="lg lg-${s} ${st}" title="${esc(tip)}">${LG_ABBR[s]}</i>`;
+    }).join("")}</span>`;
     const list = (m) => {
       const top = m.rows[0]?.rating || 1;
-      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%, индекс ${pc(l.rel)})${l.used ? "" : " — не в зачёте"}`).join(" · ") + (r.padded ? ` · ${r.padded} лига — по худшему в AREAL` : ""))}">
-        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><b>${esc(r.name)}</b><span class="rt-bar"><i style="width:${(r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
+      return `<ol class="mo-list">${m.rows.map((r) => `<li class="mo-row${m.winners.includes(r.id) ? " win" : ""}${r.id === PROFILE?.id ? " mine" : ""}" data-pid="${esc(r.id)}" title="${esc(Object.entries(r.leagues).map(([s, l]) => `${short[s]}: ${l.pts} из ${l.cap} (${pc(l.norm)}%, индекс ${pc(l.rel)})${l.used ? "" : " — не в зачёте"}`).join(" · ") + (r.padded?.length ? ` · ${r.padded.map((s) => short[s]).join(", ")} — по худшему в AREAL` : ""))}">
+        <span class="mo-rk">${r.rank}</span>${ava(r)}<span class="mo-nm"><span class="mo-line"><b>${esc(r.name)}</b>${lgMarks(r, m)}</span><span class="rt-bar"><i style="width:${(r.rating / top * 100).toFixed(1)}%"></i></span></span><span class="mo-v"><b>${pc(r.rating)}</b><span class="sub">${int(r.pts)} ФО</span></span></li>`).join("")}</ol>`;
     };
     const champ = (m) => {
       const w = m.rows.filter((r) => m.winners.includes(r.id));
