@@ -322,7 +322,7 @@
     const L = t.insightLeague, me = t.insightMe;
     if (!L && !me) return "";
     const mdh = (s) => (window.marked ? window.marked.parse(s) : `<p>${esc(s)}</p>`);
-    return `<section class="callout insight" style="margin-top:0;border-left-color:var(--pitch)"><h2 style="margin-top:0">🧠 Разбор Claude${L ? ` · ${esc(L.tour || "")}, ${L.window === "pre1" ? "за час до дедлайна" : L.window === "pre3" ? "за 3 часа" : L.window === "pre12" ? "за 12 часов" : "за сутки"}` : ""}</h2>
+    return `<section class="callout insight" style="margin-top:0;border-left-color:var(--pitch)"><h2 style="margin-top:0">🧠 Разбор ${L && L.by ? `(резерв: ${L.by === "openclaw" ? "OpenClaw" : "OpenAI"})` : "Claude"}${L ? ` · ${esc(L.tour || "")}, ${L.window === "pre1" ? "за час до дедлайна" : L.window === "pre3" ? "за 3 часа" : L.window === "pre12" ? "за 12 часов" : "за сутки"}` : ""}</h2>
       ${L ? `<p class="sub">${esc(dateTime(L.builtAt))} МСК (${ago(L.builtAt)})</p><div class="md">${mdh(L.league)}</div>` : ""}
       ${me ? `<h3>Твой состав</h3><div class="md">${mdh(me)}</div>` : ""}</section>`;
   }
